@@ -1,0 +1,3 @@
+Symbolická AI -> pracuje s čísly a hodnotami
+Sub-symbolická AI - > prauje přímo se symboly
+Jde použít systém impikace, negace
