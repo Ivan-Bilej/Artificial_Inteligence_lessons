@@ -1,13 +1,21 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import math
+from matplotlib.colors import ListedColormap
 import random as rnd
-from collections import deque
-import statistics as stat
+
+
+def create_map(max_rows: int, max_cols: int):
+    d_map = []
+
+    for i in range(max_rows):
+        row_line = rng.integers(0, 3, max_cols)
+        d_map.append(row_line)
+
+    return d_map
 
 
 def agent_unhappy(total_count: int, alike_count: int, tolerance: float):
-    return True if np.round(alike_count / total_count, 1) < tolerance else False
+    return True if alike_count / total_count <= tolerance else False
 
 
 def get_agent_surroundings(rep: list, row: int, col: int):
@@ -45,69 +53,60 @@ def find_free_space_and_unhappy_agents(rep: list):
         else:
             free_spaces.append([row, col])
 
-    print("Agents to move positions:", agents_to_move, "\nFree spaces position:", free_spaces)
     return agents_to_move, free_spaces
 
 
 def step(rep: list):
     agents_to_move, free_spaces = find_free_space_and_unhappy_agents(rep)
 
-    print(agents_to_move[0])
-    move_ind = rng.choice(len(agents_to_move), 1, replace=False)[0]
-    free_ind = rng.choice(len(free_spaces), 1, replace=False)[0]
+    move_ind = rnd.choice(agents_to_move)
+    free_ind = rnd.choice(free_spaces)
+    #move_ind = rng.choice(len(agents_to_move), 1, replace=False)[0]
+    #free_ind = rng.choice(len(free_spaces), 1, replace=False)[0]
 
-    print("Before:\n", rep)
-    print("Agent position:", move_ind, agents_to_move[move_ind])
-    print("Free space position:", free_ind, free_spaces[free_ind])
-    rep[free_ind] = rep[move_ind]
-    #rep[agent_to_move] = 0
+    #print("Before:\n", rep)
+    #print("Agent position:", move_ind)
+    #print("Free space position:", free_ind)
+    rep[free_ind[0], free_ind[1]] = rep[move_ind[0], move_ind[1]]
+    rep[move_ind[0], move_ind[1]] = 0
 
-    print("After:\n", rep)
+    #print("After:\n", rep)
 
 
-def plot(rep: list):
-    pass
+def plot(rep: list, plot_ax):
+    plot_ax.clear()
+    plot_ax.imshow(rep, cmap=custom_plot_colors, interpolation="nearest")
+    plot_ax.set_aspect("equal")
+    plt.draw()
+    plt.pause(0.05)
+
+
+def main():
+    start_torus = create_map(max_rows, max_columns)
+    numpy_torus = np.array(start_torus, dtype=int)
+
+    unhappy_agents, free_spaces = find_free_space_and_unhappy_agents(numpy_torus)
+    while unhappy_agents != 0:
+        step(numpy_torus)
+        plot(numpy_torus, plot_ax)
+        unhappy_agents, free_spaces = find_free_space_and_unhappy_agents(numpy_torus)
+
+    plt.show()
 
 
 if __name__ == "__main__":
-    start_torus = []
-    max_rows = 3
-    max_columns = 4
+    max_rows = 50
+    max_columns = 50
+    max_steps = 10
     agent1_list = [1]
     agent1_tolerance = 0.4
     agent2_list = [2]
-    agent2_tolerance = 1.6
+    agent2_tolerance = 0.6
 
     rng = np.random.default_rng(123456)
     fig = plt.figure()
     fig, plot_ax = plt.subplots()
-    plot_ax.set_aspect("equal")
+    custom_plot_colors = ListedColormap(["white", "green", "orange"])
 
-    for i in range(max_rows):
-        row_line = rng.integers(0, 3, max_columns)
-        start_torus.append(row_line)
-    start_torus = [[0, 1, 2, 0],
-                   [1, 1, 2, 2],
-                   [0, 0, 0, 0]]
-    numpy_torus = np.array(start_torus, dtype=int)
-
-
-    print(numpy_torus)
-    print(type(numpy_torus))
-    print(numpy_torus.ndim)
-    print(numpy_torus.shape[0])
-    print(numpy_torus.size)
-    step(numpy_torus)
-
-
-    """
-    plot_ax.scatter(10, 10, s=50,
-                    fc="blue", ec="k")
-
-    x = np.linspace(0, 2 * np.pi)
-    fx = np.sin(x)
-    plt.plot(x, fx)
-    """
-
-
+    main()
 
