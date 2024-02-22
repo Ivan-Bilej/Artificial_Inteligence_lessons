@@ -14,18 +14,18 @@ def create_map(max_rows: int, max_cols: int):
     return d_map
 
 
-def agent_unhappy(total_count: int, alike_count: int, tolerance: float):
-
+def agent_unhappy(total_count: int, alike_count: int, free_count: int, tolerance: float):
     if alike_count == 0 or total_count == 0:
         return True
     else:
-        return True if alike_count / total_count <= tolerance else False
+        return True if alike_count / total_count <= tolerance and free_count < max_empty_surroundings else False
 
 
 def get_agent_surroundings(rep: list, row: int, col: int):
     agent = rep[row, col]
     total_agent_count = 0
     alike_agent_count = 0
+    free_count = 0
 
     min_row = row - 1
     min_col = col - 1
@@ -39,8 +39,10 @@ def get_agent_surroundings(rep: list, row: int, col: int):
             if (rep[surr_row, surr_col] in agent1_list or rep[surr_row, surr_col] in agent2_list) and \
                     (surr_row != row or surr_col != col):
                 total_agent_count += 1
+            elif rep[surr_row, surr_col] == 0:
+                free_count += 1
 
-    return alike_agent_count, total_agent_count
+    return alike_agent_count, total_agent_count, free_count
 
 
 def find_free_space_and_unhappy_agents(rep: list):
@@ -50,10 +52,10 @@ def find_free_space_and_unhappy_agents(rep: list):
     for row, col in np.ndindex(rep.shape):
         agent = rep[row, col]
         if agent in agent1_list or agent in agent2_list:
-            alike_count, total_count = get_agent_surroundings(rep, row, col)
+            alike_count, total_count, free_count = get_agent_surroundings(rep, row, col)
             tolerance = agent1_tolerance if agent in agent1_list else agent2_tolerance
 
-            if agent_unhappy(total_count, alike_count, tolerance):
+            if agent_unhappy(total_count, alike_count, free_count, tolerance):
                 agents_to_move.append([row, col])
 
         else:
@@ -97,23 +99,24 @@ def main():
         step(numpy_torus)
         plot(numpy_torus, plot_ax)
         unhappy_agents, free_spaces = find_free_space_and_unhappy_agents(numpy_torus)
+        print("next step")
 
     plt.show()
 
 
 if __name__ == "__main__":
-    max_rows = 50
-    max_columns = 50
-    max_steps = 10
+    max_rows = 100
+    max_columns = 100
+    max_empty_surroundings = 6
     agent1_list = [1]
-    agent1_tolerance = 0.4
+    agent1_tolerance = 0.6
     agent2_list = [2]
-    agent2_tolerance = 0.4
+    agent2_tolerance = 0.6
 
-    rng = np.random.default_rng(123456)
+    rng = np.random.default_rng(12345)
     fig = plt.figure()
     fig, plot_ax = plt.subplots()
-    custom_plot_colors = ListedColormap(["white", "green", "orange"])
+    custom_plot_colors = ListedColormap(["white", "grey", "black"])
 
     main()
 
