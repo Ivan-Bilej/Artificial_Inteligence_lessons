@@ -55,17 +55,17 @@ def printrow(row: list):
 
 
 if __name__ == "__main__":
-    live_list = [1, 4, 5, 6]
-    birth_list = [3]
-    death_list = [3]
-    max_search_pos = 3
+    live_list = [2, 3, 4]
+    birth_list = []
+    death_list = []
+    max_search_pos = 1
     row_length = 10
 
     #gen = [rnd.randrange(0, 2) for i in range(row_length)]
     gen = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 
     #gen_max_number = rnd.randrange(5, 15)
-    gen_max_number = 10
+    gen_max_number = 20
     printrow(row=gen)
 
     while gen_max_number > 0:
