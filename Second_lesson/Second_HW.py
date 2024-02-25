@@ -98,8 +98,7 @@ def main():
 
 
 if __name__ == "__main__":
-    max_rows = 50
-    max_columns = 50
+    max_rows, max_columns = 50, 50
     max_empty_surroundings = 6
     agent1_list = [1]
     agent1_tolerance = 0.8
@@ -107,7 +106,6 @@ if __name__ == "__main__":
     agent2_tolerance = 0.8
 
     rng = np.random.default_rng(123456)
-    fig = plt.figure()
     fig, plot_ax = plt.subplots()
     custom_plot_colors = ListedColormap(["white", "grey", "black"])
 
