@@ -6,9 +6,15 @@ import random as rnd
 
 def create_map(max_rows: int, max_cols: int):
     d_map = []
+    # agent_count = 0
 
     for i in range(max_rows):
         row_line = rng.integers(0, 3, max_cols)
+        """
+        for agent in row_line:
+            if agent != 0:
+                agent_count += 1
+        """
         d_map.append(row_line)
 
     return d_map
@@ -74,40 +80,60 @@ def step(rep: list, agents_to_move: list, free_spaces: list):
     rep[move_ind[0], move_ind[1]] = 0
 
 
-def plot(rep: list, plot_ax):
+def plot(rep, plot_ax):
     plot_ax.clear()
     plot_ax.imshow(rep, cmap=custom_plot_colors, interpolation="nearest")
     plot_ax.set_aspect("equal")
     plt.draw()
-    plt.pause(0.005)
+    plt.pause(0.02)
+
+def plot_unhappy(unhappy_count, iter_count, plot_ax2):
+    plot_ax2.clear()
+    plot_ax2.plot(iter_count, unhappy_count, marker="o", ls="-")
+    plot_ax2.set_xlabel("Iteration")
+    plot_ax2.set_ylabel("Number of Unhappy Agents")
+    plot_ax2.grid(True)
+    plt.draw()
+    plt.pause(0.02)
 
 
 def main():
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
     start_torus = create_map(max_rows, max_columns)
     numpy_torus = np.array(start_torus, dtype=int)
 
     unhappy_agents, free_spaces = find_free_space_and_unhappy_agents(numpy_torus)
+    unhappy_count = [len(unhappy_agents)]
+    iter_count = [0]
+
     while len(unhappy_agents) != 0:
         step(numpy_torus, unhappy_agents, free_spaces)
-        plot(numpy_torus, plot_ax)
+        plot(numpy_torus, ax1)
+        plot_unhappy(unhappy_count, iter_count, ax2)
+
         unhappy_agents, free_spaces = find_free_space_and_unhappy_agents(numpy_torus)
-        print("Unhappy", unhappy_agents)
+        unhappy_count.append(len(unhappy_agents))
+        iter_count.append(iter_count[-1] + 1)
+        #print("Unhappy", unhappy_agents)
         #print("next step")
 
+    plt.tight_layout()
     plt.show()
 
 
 if __name__ == "__main__":
     max_rows, max_columns = 50, 50
-    max_empty_surroundings = 6
     agent1_list = [1]
-    agent1_tolerance = 0.8
+    agent1_tolerance = 0.2
     agent2_list = [2]
-    agent2_tolerance = 0.8
+    agent2_tolerance = 0.2
 
     rng = np.random.default_rng(123456)
-    fig, plot_ax = plt.subplots()
-    custom_plot_colors = ListedColormap(["white", "grey", "black"])
+    # Barvy podle hodnoty počínaje 0, tedy:
+    # 0 -> white
+    # 1 -> black
+    # 2 -> red
+    custom_plot_colors = ListedColormap(["white", "black", "red"])
 
     main()
 
