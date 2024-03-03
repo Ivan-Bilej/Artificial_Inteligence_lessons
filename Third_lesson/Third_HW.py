@@ -32,6 +32,21 @@ def plot(graph: nx.Graph, cols: list):
     nx.draw(graph, node_color=colors, with_labels=True)
 
 
+def get_biggest_amount_of_edges(graph: nx.Graph):
+    highest_number = 0
+    highest_edges_node = 0
+
+    for node in range(max_graph_size):
+        neighbour_count = len(list(graph.neighbors(node)))
+        if neighbour_count > highest_number:
+            highest_number = neighbour_count
+            highest_edges_node = node
+
+    print("Node with highest amount of edges", highest_edges_node)
+    print("Highest amount of edges", highest_number)
+    return highest_number
+
+
 def local_coloring(graph: nx.Graph, local_node: int, col: list):
     good_coloring_count = 0
     bad_coloring_count = 0
@@ -56,7 +71,7 @@ def local_coloring(graph: nx.Graph, local_node: int, col: list):
 def is_coloring(graph: nx.Graph, col: list):
     bad_coloring_count = 0
 
-    for local_node in range(graph.number_of_nodes()):
+    for local_node in range(max_graph_size):
         for neighbour in graph.neighbors(local_node):
             if col[local_node] == col[neighbour]:
                 print("Neighbour", neighbour, "isn't of a different color for local:", local_node)
@@ -72,31 +87,26 @@ def is_coloring(graph: nx.Graph, col: list):
 
 def color(graph: nx.Graph, k: int, steps: int):
     local_node = 0
+    temp_color_list = []
     optimum_count = 0
 
     # Creates color palette
     colors = [x for x in range(k)]
-    color_list = [rng.choice(colors) for node in range(graph.number_of_nodes())]
+    color_list = [rng.choice(colors) for node in range(max_graph_size)]
 
+    # Draws first graph with colors
     draw_graph(graph, color_list)
-    print("looking with local node:", local_node)
-
 
     print("Started color list:", color_list)
     print("Start process of looking for color")
     while steps != 0:
+        print("Watched node: ")
         solved, bad_amount, good_amount, mapping = local_coloring(graph, local_node, color_list)
 
         if not solved:
-            for node in mapping:
-                if mapping[node] == 0:
-                    print("Changing color of node:", node)
-                    temp_colors = colors.copy()
-                    print(temp_colors)
-                    color_list[node] = rng.choice(temp_colors)
-                    print("Changed list:", color_list)
-            solved, bad_amount, good_amount, mapping = local_coloring(graph, local_node, color_list)
-        elif local_node != graph.number_of_nodes():
+            for neighbour in graph.neighbors(local_node):
+
+        elif local_node != max_graph_size:
             local_node += 1
         else:
             break
@@ -113,7 +123,8 @@ def draw_graph(graph: nx.Graph, col_list: list):
 
 
 def main():
-    graph = nx.erdos_renyi_graph(10, 0.25)
+    graph = nx.erdos_renyi_graph(max_graph_size, 0.25)
+    color_number = get_biggest_amount_of_edges(graph)
 
     color_list, solved = color(graph, color_number, max_steps)
     print("Completed search with colors", color_list, "\n and seach being", solved)
@@ -123,7 +134,7 @@ def main():
 if __name__ == "__main__":
     rng = np.random.default_rng(123456)
     colmap = ['salmon', 'skyblue']
-    color_number = 4
+    max_graph_size = 10
     max_steps = 10
 
     main()
