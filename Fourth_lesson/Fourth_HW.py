@@ -29,31 +29,31 @@ def plot_statistics(mean, maximum):
 
 
 def count_lakes_and_peaks_and_underwater(terrain: list):
-    lake_start = 0.0
+    lake_start = False
+    peak_start = False
     lake_count = 0
-    peak_start = 0.0
     peak_count = 0
     underwater_count = 0
 
     for point in terrain:
-        if point <= 0.5 and lake_start == 0.0:
-            lake_start = point
-        elif point >= 0.5 and lake_start != 0.0:
-            lake_count += 1
-            lake_start = 0.0
-
-        if point >= 0.5 and peak_start == 0.0:
-            peak_start = point
-        elif point < 0.5 and peak_start != 0.0:
-            peak_count += 1
-            peak_start = 0.0
-
         if point < 0.5:
             underwater_count += 1
+            if not lake_start:
+                lake_start = True
+                if peak_start:
+                    peak_count += 1
+                    peak_start = False
 
-    if lake_start != 0.0:
+        else:
+            if not peak_start:
+                peak_start = True
+                if lake_start:
+                    lake_count += 1
+                    lake_start = False
+
+    if lake_start:
         lake_count += 1
-    elif peak_start != 0.0:
+    if peak_start:
         peak_count += 1
 
     return lake_count, peak_count, underwater_count
@@ -64,21 +64,20 @@ def evaluate(individual):
     variability = max(individual) - min(individual)
     underwater_percentage = underwater_count / len(individual)
 
-    fitness = 1.0 * abs(number_of_lakes - lakes) + \
-              1.0 * abs(number_of_peaks - peaks) + \
-              1.0 * abs(terrain_variability - variability) + \
-              1.0 * abs(underwater_perc - underwater_percentage) + \
-              1.0 * abs(lake_size - underwater_count) + \
-              1.0 * abs(lake_depth - min(individual))
+    fitness = abs(number_of_lakes - lakes) + \
+              abs(number_of_peaks - peaks) + \
+              abs(terrain_variability - variability) + \
+              abs(underwater_perc - underwater_percentage) + \
+              abs(lake_size - underwater_count) + \
+              abs(lake_depth - min(individual))
 
-    fitness = 1 / fitness
-    print(fitness)
+    print(1 / fitness + 0.01)
     return (fitness,)
 
 
 def create_toolbox():
     def custom_attr_float():
-        return round(rnd.random(), 1)
+        return round(rnd.uniform(0, 1), 1)
 
     # Sets the fitness weight
     creator.create("FitnessMax", base.Fitness, weights=fitness_weights)
@@ -98,7 +97,7 @@ def create_toolbox():
     # Register crossover (mating) of 2 individuals
     toolbox.register("mate", tools.cxOnePoint)
     # Registers mutation of the individual with thw lowest and highest possible value % of the mutation
-    toolbox.register("mutate", tools.mutUniformInt, low=0, up=1, indpb=0.05)
+    toolbox.register("mutate", tools.mutPolynomialBounded, eta=1.0, low=0, up=1, indpb=0.05)
     # Select up to tournsize amount of Individuals via tournament
     toolbox.register("select", tools.selTournament, tournsize=3)
 
@@ -145,18 +144,18 @@ if __name__ == "__main__":
 
     max_generations = 50
     max_data_length = 10
-    crossover_percent = 0.7
+    crossover_percent = 0.5
     mutation_percent = 0.4
     identity_info = 5
     fitness_weights = (1.0,)
 
     # Criteria
     number_of_lakes = 2
-    number_of_peaks = 3
-    terrain_variability = 0.65
+    number_of_peaks = 5
+    terrain_variability = 2
     underwater_perc = 0.3
     lake_size = 2
-    lake_depth = 0.3
+    lake_depth = 0.2
     # ... can be added more later on
 
     main()
