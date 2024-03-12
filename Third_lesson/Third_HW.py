@@ -113,7 +113,7 @@ def color(graph: nx.Graph, k: int, steps: int):
         else:
             break
         print("New color list:", color_list)
-        draw_graph(graph, color_list)
+        #draw_graph(graph, color_list)
         steps -= 1
 
     return color_list, is_coloring(graph, color_list)
@@ -130,13 +130,14 @@ def main():
 
     # graph = nx.erdos_renyi_graph(max_graph_size, 0.25)
     graph = read_dimacs(file_path="I:\Můj disk\Škola\Artificial_intelligence\Lesson_3",
-                        filename="dsjc250.5.col.txt")
+                        filename="dsjc500.1.col.txt")
 
-    color_number = get_biggest_amount_of_edges(graph)
-    # color_number = max_colors
+    #color_number = get_biggest_amount_of_edges(graph)
+    color_number = max_colors
 
     color_list, solved = color(graph, color_number, max_steps)
     print("Completed search with colors", color_list, "\n and seach being", solved)
+    draw_graph(graph, color_list)
 
     end = time.time()
     print("Runtime:", end - start)
@@ -148,8 +149,10 @@ if __name__ == "__main__":
     rng = np.random.default_rng(123456)
     colmap = ['salmon', 'skyblue']
     max_graph_size = 20
-    max_colors = 40
-    max_optimum_steps = 10
-    max_steps = 500
+    max_colors = 28
+    max_optimum_steps = 20
+    max_steps = 5000
 
+    # best 250.5: 60 colors
+    # best 500.1: 29 colors
     main()
