@@ -14,7 +14,10 @@ def plot_terrain(t):
     print(t)
     ax.fill_between(x, sea, color="turquoise")
     ax.fill_between(x, t, color="sandybrown")
-    ax.axis("off")
+    #ax.axis("off")
+    #for i, j in zip(x, t):
+    #    ax.annotate(str(j), xy=(i, j))
+
     plt.draw()
 
 
@@ -45,6 +48,7 @@ def count_lakes_and_peaks_and_underwater(terrain: list):
                     peak_start = False
 
         else:
+            underwater_count = 0
             if not peak_start:
                 peak_start = True
                 if lake_start:
@@ -61,7 +65,7 @@ def count_lakes_and_peaks_and_underwater(terrain: list):
 
 def evaluate(individual):
     lakes, peaks, underwater_count = count_lakes_and_peaks_and_underwater(individual)
-    variability = max(individual) - min(individual)
+    variability = round(max(individual) - min(individual), 3)
     underwater_percentage = underwater_count / len(individual)
 
     fitness = abs(number_of_lakes - lakes) + \
@@ -71,13 +75,18 @@ def evaluate(individual):
               abs(lake_size - underwater_count) + \
               abs(lake_depth - min(individual))
 
-    print(1 / fitness + 0.01)
-    return (fitness,)
+    print("Hodnoty:")
+    print(lakes, peaks, variability, underwater_percentage, underwater_count, min(individual), fitness)
+    adjusted_fitness = 1 / (fitness + 0.0001)
+    print(adjusted_fitness)
+    return (adjusted_fitness,)
 
 
 def create_toolbox():
     def custom_attr_float():
-        return round(rnd.uniform(0, 1), 1)
+        float_num = rnd.uniform(0.0, 1.0)
+        float_num = round(float_num, 3)
+        return float_num
 
     # Sets the fitness weight
     creator.create("FitnessMax", base.Fitness, weights=fitness_weights)
@@ -96,8 +105,8 @@ def create_toolbox():
     toolbox.register("evaluate", evaluate)
     # Register crossover (mating) of 2 individuals
     toolbox.register("mate", tools.cxOnePoint)
-    # Registers mutation of the individual with thw lowest and highest possible value % of the mutation
-    toolbox.register("mutate", tools.mutPolynomialBounded, eta=1.0, low=0, up=1, indpb=0.05)
+    # Registers mutation of the individual with thw lowest and highest possible value and % of the mutation
+    toolbox.register("mutate", tools.mutPolynomialBounded, eta=0.8, low=0, up=1, indpb=0.005)
     # Select up to tournsize amount of Individuals via tournament
     toolbox.register("select", tools.selTournament, tournsize=3)
 
@@ -127,7 +136,7 @@ def main():
                                             stats=stats,
                                             halloffame=hof)
     print(finalpop)
-    print(logbook)
+    #print(logbook)
     print(hof)
 
     mean, maximum = logbook.select("mean", "max")
@@ -142,19 +151,18 @@ def main():
 if __name__ == "__main__":
     test_data = [1.0, 0.2, 0.5, 0.6, 0.2, 0.7, 0.8, 0.5, 0.3, 0.5, 0.4, 0.5, 0.8]
 
-    max_generations = 50
+    max_generations = 500
     max_data_length = 10
     crossover_percent = 0.5
     mutation_percent = 0.4
-    identity_info = 5
     fitness_weights = (1.0,)
 
     # Criteria
     number_of_lakes = 2
     number_of_peaks = 5
-    terrain_variability = 2
-    underwater_perc = 0.3
-    lake_size = 2
+    terrain_variability = 0.5
+    underwater_perc = 0.2
+    lake_size = 3
     lake_depth = 0.2
     # ... can be added more later on
 
