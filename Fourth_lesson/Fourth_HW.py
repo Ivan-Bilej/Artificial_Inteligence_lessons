@@ -14,7 +14,7 @@ def plot_terrain(t):
     print(t)
     ax.fill_between(x, sea, color="turquoise")
     ax.fill_between(x, t, color="sandybrown")
-    #ax.axis("off")
+    ax.axis("off")
     #for i, j in zip(x, t):
     #    ax.annotate(str(j), xy=(i, j))
 
@@ -70,10 +70,10 @@ def evaluate(individual):
 
     fitness = abs(number_of_lakes - lakes) + \
               abs(number_of_peaks - peaks) + \
-              abs(terrain_variability - variability) + \
-              abs(underwater_perc - underwater_percentage) + \
-              abs(lake_size - underwater_count) + \
-              abs(lake_depth - min(individual))
+              abs(terrain_variability - variability)
+              #abs(underwater_perc - underwater_percentage) + \
+              #abs(lake_size - underwater_count) + \
+              #abs(lake_depth - min(individual))
 
     print("Hodnoty:")
     print(lakes, peaks, variability, underwater_percentage, underwater_count, min(individual), fitness)
@@ -152,18 +152,18 @@ if __name__ == "__main__":
     test_data = [1.0, 0.2, 0.5, 0.6, 0.2, 0.7, 0.8, 0.5, 0.3, 0.5, 0.4, 0.5, 0.8]
 
     max_generations = 500
-    max_data_length = 10
+    max_data_length = 30
     crossover_percent = 0.5
-    mutation_percent = 0.4
+    mutation_percent = 0.6
     fitness_weights = (1.0,)
 
     # Criteria
-    number_of_lakes = 2
+    number_of_lakes = 3
     number_of_peaks = 5
-    terrain_variability = 0.5
-    underwater_perc = 0.2
-    lake_size = 3
-    lake_depth = 0.2
+    terrain_variability = 0.2
+    underwater_perc = 0.0
+    lake_size = 0
+    lake_depth = 0.4
     # ... can be added more later on
 
     main()
