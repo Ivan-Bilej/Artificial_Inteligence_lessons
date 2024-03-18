@@ -45,6 +45,8 @@ def play(f1, f2, stepsnum):
     for i in range(stepsnum):
         tah1 = f1(historie1, historie2)
         tah2 = f2(historie2, historie1)
+        #print("Tah hráče 1:", tah1)
+        #print("Tah hráče 2:", tah2)
 
         s1, s2 = rozdej_skore(tah1, tah2)
         skore1 += s1
@@ -56,14 +58,36 @@ def play(f1, f2, stepsnum):
     return skore1, skore2
 
 
-def decide_turn_answer(my_history: list, other_player_history: list):
-    if len(my_history) > 0 and len(other_player_history) > 0:
-        if other_player_history[len(other_player_history)-1] == 0:
-            return 0
-        else:
+def individual_strategy(individual):
+    #print(individual)
+
+    def strategy(my_history: list, opponent_history: list):
+        betrayals = 0
+        saves = 0
+
+        if len(my_history) == 0:
+            return individual[0]
+
+        for turn in opponent_history[(len(opponent_history)-max_turn_search):]:
+            if turn == 1:
+                betrayals += 1
+            else:
+                saves += 1
+
+        if betrayals == 2:
             return 1
-    else:
-        return 0
+        else:
+            return individual[len(my_history) % len(individual)]
+
+    return strategy
+
+
+def evaluate(individual):
+    random_opponent = [rnd.randint(0, 1) for _ in range(max_game_steps)]
+    opponent_strategy = individual_strategy(random_opponent)
+    my_strategy = individual_strategy(individual)
+    score, _ = play(my_strategy, opponent_strategy, max_game_steps)
+    return (score,)
 
 
 def create_toolbox():
@@ -73,30 +97,18 @@ def create_toolbox():
     creator.create("Individual", list, fitness=creator.FitnessMin)
 
     toolbox = base.Toolbox()
-    toolbox.register("attr", 0)
+    toolbox.register("attr", rnd.randint, 0, 1)
     toolbox.register("individual", tools.initRepeat, creator.Individual,
-                     toolbox.attr, n=max_data_length)
+                     toolbox.attr, n=max_game_steps)
     toolbox.register("population", tools.initRepeat, list, toolbox.individual)
-    toolbox.register("game", play, toolbox.individual, toolbox.individual, max_game_steps)
-
-    """
-    # Generate a random number from 0 to 1
-    toolbox.register("attr_float", custom_attr_float)
-    # Create an individual containing those numbers. Maximum amount of number mentioned by n
-    toolbox.register("individual", tools.initRepeat, creator.Individual,
-                     toolbox.attr_float, n=max_data_length)
-    # Creates a population from Individuals
-    toolbox.register("population", tools.initRepeat, list, toolbox.individual)
-    # Register function evaluate into toolbox
     toolbox.register("evaluate", evaluate)
+
     # Register crossover (mating) of 2 individuals
     toolbox.register("mate", tools.cxOnePoint)
     # Registers mutation of the individual with thw lowest and highest possible value and % of the mutation
-    toolbox.register("mutate", tools.mutPolynomialBounded, eta=0.8, low=0, up=1, indpb=0.005)
+    toolbox.register("mutate", tools.mutUniformInt, low=0, up=1, indpb=0.005)
     # Select up to tournsize amount of Individuals via tournament
     toolbox.register("select", tools.selTournament, tournsize=3)
-    """
-
 
     return toolbox
 
@@ -122,6 +134,7 @@ def main():
                                             stats=stats,
                                             halloffame=hof)
 
+    print(finalpop[-1])
     mean, maximum = logbook.select("mean", "max")
     plot_statistics(mean, maximum)
     plt.show()
@@ -129,8 +142,8 @@ def main():
 
 if __name__ == "__main__":
     max_generations = 500
-    max_game_steps = 10
-    max_data_length = 10
+    max_game_steps = 5
+    max_turn_search = 1
     crossover_percent = 0.5
     mutation_percent = 0.4
     fitness_weights = (-1.0,)
