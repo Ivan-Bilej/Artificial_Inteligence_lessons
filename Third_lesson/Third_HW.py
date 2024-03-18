@@ -86,19 +86,27 @@ def color(graph: nx.Graph, k: int, steps: int):
 
     print("Started color list:", color_list)
     while steps != 0:
-        print("Watched node: ", local_node)
+        #print("Watched node: ", local_node)
         solved, bad_amount = local_coloring(graph, local_node, color_list)
 
         if not solved and optimum_count < max_optimum_steps:
             temp_bad_amounts = []
             temp_solutions = []
 
-            for neighbour in graph.neighbors(local_node):
-                temp_color_list = color_list.copy()
+            r = rng.random()
+            if r < 0.25:
                 temp_color_list[local_node] = rng.choice(colors)
                 solved, bad_amount = local_coloring(graph, local_node, temp_color_list)
                 temp_bad_amounts.append(bad_amount)
                 temp_solutions.append(temp_color_list)
+
+            else:
+                for neighbour in graph.neighbors(local_node):
+                    temp_color_list = color_list.copy()
+                    temp_color_list[local_node] = rng.choice(colors)
+                    solved, bad_amount = local_coloring(graph, local_node, temp_color_list)
+                    temp_bad_amounts.append(bad_amount)
+                    temp_solutions.append(temp_color_list)
 
             index = temp_bad_amounts.index(min(temp_bad_amounts))
             # print("Possible solutions:", temp_solutions)
@@ -111,9 +119,15 @@ def color(graph: nx.Graph, k: int, steps: int):
             local_node += 1
             optimum_count = 0
         else:
-            break
-        print("New color list:", color_list)
+            if is_coloring(graph, color_list):
+                break
+            else:
+                local_node = 0
+
         #draw_graph(graph, color_list)
+        if steps % 100 == 0:
+            print("Leftover steps:", steps)
+            print("New color list:", color_list)
         steps -= 1
 
     return color_list, is_coloring(graph, color_list)
@@ -129,15 +143,15 @@ def main():
     start = time.time()
 
     # graph = nx.erdos_renyi_graph(max_graph_size, 0.25)
-    graph = read_dimacs(file_path="I:\Můj disk\Škola\Artificial_intelligence\Lesson_3",
-                        filename="dsjc500.1.col.txt")
+    graph = read_dimacs(file_path="G:\Můj disk\Škola\Artificial_intelligence\Lesson_3",
+                        filename="dsjc250.5.col.txt")
 
     #color_number = get_biggest_amount_of_edges(graph)
     color_number = max_colors
 
     color_list, solved = color(graph, color_number, max_steps)
     print("Completed search with colors", color_list, "\n and seach being", solved)
-    draw_graph(graph, color_list)
+    #draw_graph(graph, color_list)
 
     end = time.time()
     print("Runtime:", end - start)
@@ -149,10 +163,10 @@ if __name__ == "__main__":
     rng = np.random.default_rng(123456)
     colmap = ['salmon', 'skyblue']
     max_graph_size = 20
-    max_colors = 28
+    max_colors = 45
     max_optimum_steps = 20
-    max_steps = 5000
+    max_steps = 500000
 
-    # best 250.5: 60 colors
+    # best 250.5: 45 colors
     # best 500.1: 29 colors
     main()
