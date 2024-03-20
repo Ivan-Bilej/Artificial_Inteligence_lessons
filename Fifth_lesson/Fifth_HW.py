@@ -55,39 +55,78 @@ def play(f1, f2, stepsnum):
         historie1.append(tah1)
         historie2.append(tah2)
 
+    #print(f1.__name__, ":", skore1, f2.__name__, ":", skore2)
     return skore1, skore2
 
 
-def individual_strategy(individual):
-    #print(individual)
+def primitive_strategy(my_history: list, opponent_history: list):
+    if len(my_history) == 0:
+        return 0
 
-    def strategy(my_history: list, opponent_history: list):
-        betrayals = 0
-        saves = 0
+    if opponent_history[-1] == 1:
+        return 1
+    else:
+        return 0
 
-        if len(my_history) == 0:
+
+def always_betray(my_history: list, opponent_history: list):
+    return 1
+
+
+def always_cooperate(my_history: list, opponent_history: list):
+    return 0
+
+
+def random_strategy(my_history: list, opponent_history: list):
+    return rnd.randint(0, 1)
+
+
+def individual_strategy(individual: list):
+    def betray(my_history: list, opponent_history: list):
+        betrayal = 0
+        cooperate = 0
+
+        if not my_history:
             return individual[0]
 
-        for turn in opponent_history[(len(opponent_history)-max_turn_search):]:
-            if turn == 1:
-                betrayals += 1
+        for x in opponent_history[(len(opponent_history) - 2):]:
+            if x == 1:
+                betrayal += 1
             else:
-                saves += 1
+                cooperate += 1
 
-        if betrayals == 2:
-            return 1
+        if betrayal == 1 and cooperate == 0:
+            return individual[1]
+        elif betrayal == 2 and cooperate == 0:
+            return individual[2]
+        elif betrayal == 0 and cooperate == 1:
+            return individual[3]
+        elif betrayal == 1 and cooperate == 1:
+            return individual[4]
+        elif betrayal == 2 and cooperate == 1:
+            return individual[5]
+        elif betrayal == 0 and cooperate == 2:
+            return individual[6]
+        elif betrayal == 1 and cooperate == 2:
+            return individual[7]
+        elif betrayal == 2 and cooperate == 2:
+            return individual[8]
         else:
-            return individual[len(my_history) % len(individual)]
+            return individual[9]
 
-    return strategy
+    return betray
 
 
 def evaluate(individual):
-    random_opponent = [rnd.randint(0, 1) for _ in range(max_game_steps)]
-    opponent_strategy = individual_strategy(random_opponent)
     my_strategy = individual_strategy(individual)
-    score, _ = play(my_strategy, opponent_strategy, max_game_steps)
-    return (score,)
+    strategies = [always_betray, always_cooperate, random_strategy, primitive_strategy, my_strategy] * 5
+    scores = []
+
+    for strategy in strategies:
+        score1, _ = play(my_strategy, strategy, max_game_steps)
+        scores.append(score1)
+
+    return (sum(scores),)
 
 
 def create_toolbox():
@@ -99,14 +138,14 @@ def create_toolbox():
     toolbox = base.Toolbox()
     toolbox.register("attr", rnd.randint, 0, 1)
     toolbox.register("individual", tools.initRepeat, creator.Individual,
-                     toolbox.attr, n=max_game_steps)
+                     toolbox.attr, n=individual_max_strats)
     toolbox.register("population", tools.initRepeat, list, toolbox.individual)
     toolbox.register("evaluate", evaluate)
 
     # Register crossover (mating) of 2 individuals
     toolbox.register("mate", tools.cxOnePoint)
     # Registers mutation of the individual with thw lowest and highest possible value and % of the mutation
-    toolbox.register("mutate", tools.mutUniformInt, low=0, up=1, indpb=0.005)
+    toolbox.register("mutate", tools.mutUniformInt, low=0, up=1, indpb=0.05)
     # Select up to tournsize amount of Individuals via tournament
     toolbox.register("select", tools.selTournament, tournsize=3)
 
@@ -126,7 +165,7 @@ def main():
     stats = set_up_statistics()
     hof = tools.HallOfFame(1)
 
-    pop = toolbox.population(n=20)
+    pop = toolbox.population(n=population_max)
     finalpop, logbook = algorithms.eaSimple(pop, toolbox,
                                             cxpb=crossover_percent,
                                             mutpb=mutation_percent,
@@ -134,18 +173,27 @@ def main():
                                             stats=stats,
                                             halloffame=hof)
 
-    print(finalpop[-1])
+    print(hof[0])
     mean, maximum = logbook.select("mean", "max")
     plot_statistics(mean, maximum)
     plt.show()
 
 
 if __name__ == "__main__":
-    max_generations = 500
-    max_game_steps = 5
-    max_turn_search = 1
+    max_generations = 50000
+    individual_max_strats = 10
+    population_max = 20
+    fitness_weights = (-1.0,)
+
+    # best_500 [1, 0, 1, 1, 0, 0, 1, 0, 0, 1]
+    # best 1000 [0, 1, 1, 1, 0, 0, 1, 1, 1, 0]
+    # best 1500 [0, 1, 1, 0, 0, 0, 1, 0, 1, 1]
+
+    max_game_steps = 15
+    max_turn_search = 2
+
     crossover_percent = 0.5
     mutation_percent = 0.4
-    fitness_weights = (-1.0,)
+
 
     main()
