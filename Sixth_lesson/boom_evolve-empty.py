@@ -5,8 +5,6 @@ import pygame
 import numpy as np
 import random
 import math
-
-
 from deap import base
 from deap import creator
 from deap import tools
@@ -38,7 +36,7 @@ BOOM_FONT = pygame.font.SysFont("comicsans", 100)
 LEVEL_FONT = pygame.font.SysFont("comicsans", 20)   
 
 
-ENEMY_IMAGE  = pygame.image.load("mine.png")
+ENEMY_IMAGE = pygame.image.load("mine.png")
 ME_IMAGE = pygame.image.load("me.png")
 SEA_IMAGE = pygame.image.load("sea.png")
 FLAG_IMAGE = pygame.image.load("flag.png")
@@ -56,6 +54,7 @@ FLAG = pygame.transform.scale(FLAG_IMAGE, (ME_SIZE, ME_SIZE))
 # ----------------------------------------------------------------------------
 # třídy objektů 
 # ----------------------------------------------------------------------------
+
 
 # trida reprezentujici minu
 class Mine:
@@ -78,9 +77,7 @@ class Mine:
         self.rect = pygame.Rect(x, y, ENEMY_SIZE, ENEMY_SIZE)
         
         self.velocity = random.randint(1, MAX_MINE_VELOCITY)
-        
-  
-    
+
   
 # trida reprezentujici me, tedy meho agenta        
 class Me:
@@ -89,7 +86,7 @@ class Me:
         self.alive = True
         self.won = False
         self.timealive = 0
-        self.sequence = []
+        self.sequence = [1, 1, 1, 1, 3]
         self.fitness = 0
         self.dist = 0
     
@@ -104,8 +101,7 @@ class Flag:
 class Hof:
     def __init__(self):
         self.sequence = []
-        
-    
+
     
 # -----------------------------------------------------------------------------    
 # nastavení herního plánu    
@@ -131,6 +127,7 @@ def set_mes(num):
         
     return l
 
+
 # zresetuje vsechny mes zpatky na start
 def reset_mes(mes, pop):
     for i in range(len(pop)):
@@ -146,19 +143,52 @@ def reset_mes(mes, pop):
 
 
 
-    
+
+
 
 # -----------------------------------------------------------------------------    
 # senzorické funkce 
-# -----------------------------------------------------------------------------    
-
-
-
-
+# -----------------------------------------------------------------------------
 # TODO
 
-def my_senzor(me):
-    return 1
+def my_senzor(me, flag, mines, senzor_len):
+    my_pos = (me.rect.x, me.rect.y)
+    flag_pos = (flag.rect.x, flag.rect.y)
+    flag_difference = (flag_pos[0] - my_pos[0], flag_pos[1] - my_pos[1])
+
+    for mine in mines:
+        mine_pos = (mine.rect.x, mine.rect.y)
+
+        x_difference = my_pos[0] - mine_pos[0]
+        y_difference = my_pos[1] - mine_pos[1]
+
+        # (Y over me, Y below me, X front of me, X behind me, flag_diff)
+        if 0 < y_difference <= senzor_len:
+            if 0 < x_difference <= senzor_len:
+                print("Over ME by:", y_difference)
+                print("Behind of ME by:", x_difference)
+                return abs(y_difference), 0, 0, abs(x_difference), flag_difference
+
+            elif 0 > x_difference >= -senzor_len:
+                print("Over ME by:", y_difference)
+                print("Front ME by:", x_difference)
+                return abs(y_difference), 0, abs(x_difference), 0, flag_difference
+
+        # (Y over me, Y below me, X front of me, X behind me, flag_diff)
+        elif 0 > y_difference >= -senzor_len:
+            if 0 < x_difference <= senzor_len:
+                print("Under ME by:", y_difference)
+                print("Behind of ME by:", x_difference)
+                return 0, abs(y_difference), 0, abs(x_difference), flag_difference
+
+            elif 0 > x_difference >= -senzor_len:
+                print("Under ME by:", y_difference)
+                print("Front ME by:", x_difference)
+                return 0, abs(y_difference), abs(x_difference), 0, flag_difference
+
+    # print(my_pos)
+    # (Y over me, Y below me, X front of me, X behind me, flag_diff)
+    return 0, 0, 0, 0, flag_difference
 
 
 # -----> ZDE je prostor pro vlastní senzorické funkce !!!!
@@ -228,7 +258,6 @@ def alive_mes_num(mes):
     return c
 
 
-
 # vrací počet mes co vyhráli
 def won_mes_num(mes):
     c = 0
@@ -237,21 +266,20 @@ def won_mes_num(mes):
             c += 1
     return c
 
-         
-    
+
 # resi pohyb miny        
 def handle_mine_movement(mine):
         
     if mine.dirx == -1 and mine.rect.x - mine.velocity < 0:
         mine.dirx = 1
        
-    if mine.dirx == 1  and mine.rect.x + mine.rect.width + mine.velocity > WIDTH:
+    if mine.dirx == 1 and mine.rect.x + mine.rect.width + mine.velocity > WIDTH:
         mine.dirx = -1
 
     if mine.diry == -1 and mine.rect.y - mine.velocity < 0:
         mine.diry = 1
     
-    if mine.diry == 1  and mine.rect.y + mine.rect.height + mine.velocity > HEIGHT:
+    if mine.diry == 1 and mine.rect.y + mine.rect.height + mine.velocity > HEIGHT:
         mine.diry = -1
          
     mine.rect.x += mine.dirx * mine.velocity
@@ -274,24 +302,19 @@ def draw_window(mes, mines, flag, level, generation, timer):
     WIN.blit(SEA, (0, 0))   
     
     t = LEVEL_FONT.render("level: " + str(level), 1, WHITE)   
-    WIN.blit(t, (10  , HEIGHT - 30))
+    WIN.blit(t, (10, HEIGHT - 30))
     
     t = LEVEL_FONT.render("generation: " + str(generation), 1, WHITE)   
-    WIN.blit(t, (150  , HEIGHT - 30))
+    WIN.blit(t, (150, HEIGHT - 30))
     
     t = LEVEL_FONT.render("alive: " + str(alive_mes_num(mes)), 1, WHITE)   
-    WIN.blit(t, (350  , HEIGHT - 30))
+    WIN.blit(t, (350, HEIGHT - 30))
     
     t = LEVEL_FONT.render("won: " + str(won_mes_num(mes)), 1, WHITE)   
-    WIN.blit(t, (500  , HEIGHT - 30))
+    WIN.blit(t, (500, HEIGHT - 30))
     
     t = LEVEL_FONT.render("timer: " + str(timer), 1, WHITE)   
-    WIN.blit(t, (650  , HEIGHT - 30))
-    
-    
-    
-    
-    
+    WIN.blit(t, (650, HEIGHT - 30))
 
     WIN.blit(FLAG, (flag.rect.x, flag.rect.y))    
          
@@ -335,39 +358,75 @@ def draw_text(text):
 # funkce dostane na vstupu vstupy neuronové sítě inp, a váhy hran wei
 # vrátí seznam hodnot výstupních neuronů
 def nn_function(inp, wei):
-    
-  
-    
-    return [3]
+    # TODO: Vyplnit neuronovou síť
+    # (Y over me, Y below me, X front of me, X behind me, flag_diff(x, y))
+    # [(0, 0, 0, 0, (840, 430))]
+    # [Go down, Go up, Go left, Go right]
+    output = [0, 0, 0, 0]
+    print(wei)
+
+    # Write if ME must go some way because of DANGER
+    # Go DOWN
+    if inp[0] != 0:
+        output[0] = 1 * wei[0]
+        if (inp[4][1] - 5) > inp[4][1]:
+            output[0] = output[0] - wei[4]
+        else:
+            output[0] = output[0] + wei[4]
+
+    # Go UP
+    if inp[1] != 0:
+        output[1] = 1 * wei[1]
+        if (inp[4][1] + 5) > inp[4][1]:
+            output[1] = output[1] - wei[4]
+        else:
+            output[1] = output[1] + wei[4]
+
+    # Go LEFT
+    if inp[2] != 0:
+        output[2] = 1 * wei[2]
+        if (inp[4][0] - 5) > inp[4][0]:
+            output[2] = output[2] - wei[4]
+        else:
+            output[2] = output[2] + wei[4]
+
+    # Go RIGHT
+    if inp[3] != 0:
+        output[3] = 1 * wei[3]
+        if (inp[4][0] - 5) > inp[4][0]:
+            output[3] = output[2] - wei[4]
+        else:
+            output[3] = output[2] + wei[4]
+
+    return output
 
 
 # naviguje jedince pomocí neuronové sítě a jeho vlastní sekvence v něm schované
 def nn_navigate_me(me, inp):
-       
-    
     # TODO  <------ ZDE vlastní kód vyhodnocení výstupů z neuronové sítě !!!!!!
-    
+
     out = np.array(nn_function(inp, me.sequence))
-    ind = out[0] # použít arg_max pro výběr kroku
+    print(out)
+    ind = out
     #print(out)
-    
+
+    # dolu, pokud není zeď
+    if ind[0] > 0 and me.rect.y + me.rect.height + ME_VELOCITY < HEIGHT:
+        me.rect.y += ME_VELOCITY
+        me.dist += ME_VELOCITY
+
     # nahoru, pokud není zeď
-    if ind == 0 and me.rect.y - ME_VELOCITY > 0:
+    if ind[1] > 0 and me.rect.y - ME_VELOCITY > 0:
         me.rect.y -= ME_VELOCITY
         me.dist += ME_VELOCITY
-    
-    # dolu, pokud není zeď
-    if ind == 1 and me.rect.y + me.rect.height + ME_VELOCITY < HEIGHT:
-        me.rect.y += ME_VELOCITY  
-        me.dist += ME_VELOCITY
-    
+
     # doleva, pokud není zeď
-    if ind == 2 and me.rect.x - ME_VELOCITY > 0:
+    if ind[2] > 0 and me.rect.x - ME_VELOCITY > 0:
         me.rect.x -= ME_VELOCITY
         me.dist += ME_VELOCITY
         
     # doprava, pokud není zeď    
-    if ind == 3 and me.rect.x + me.rect.width + ME_VELOCITY < WIDTH:
+    if ind[3] > 0 and me.rect.x + me.rect.width + ME_VELOCITY < WIDTH:
         me.rect.x += ME_VELOCITY
         me.dist += ME_VELOCITY
     
@@ -384,19 +443,17 @@ def check_mes_won(mes, flag):
 
 
 # resi pohyb mes
-def handle_mes_movement(mes, mines, flag):
-    
+def handle_mes_movement(mes, mines, flag, senzor_length):
+    # TODO: Update správných vstupu ze senzoru
     for me in mes:
-
         if me.alive and not me.won:
-            
             # <----- ZDE  sbírání vstupů ze senzorů !!!
             # naplnit vstup in vstupy ze senzorů
             inp = []
             
-            inp.append(my_senzor(me))
-            
-            
+            for x in my_senzor(me, flag, mines, senzor_length):
+                inp.append(x)
+            print(inp)
             nn_navigate_me(me, inp)
 
 
@@ -416,14 +473,15 @@ def update_mes_timers(mes, timer):
 
 
 # funkce pro výpočet fitness všech jedinců
-def handle_mes_fitnesses(mes):    
-    
+def handle_mes_fitnesses(mes, flag):
     # <--------- TODO  ZDE se počítá fitness jedinců !!!!
     # na základě informací v nich uložených, či jiných vstupů
     for me in mes:
-        me.fitness = me.timealive
-    
-    
+        my_number_pos = me.rect.x + me.rect.y
+        flag_num_pos = flag.rect.x + flag.rect.y
+        me.fitness = flag_num_pos - my_number_pos
+        # me.timealive + (flag_num_pos - my_number_pos)
+
 
 # uloží do hof jedince s nejlepší fitness
 def update_hof(hof, mes):
@@ -447,7 +505,9 @@ def main():
     DELKA_JEDINCE = 10   # <--------- záleží na počtu vah a prahů u neuronů !!!!!
     NGEN = 30        # počet generací
     CXPB = 0.6          # pravděpodobnost crossoveru na páru
-    MUTPB = 0.2        # pravděpodobnost mutace
+    MUTPB = 0.2        # pravděpodobnost mutace+
+    DELKA_SENZORU = 100  # vzdálenost, kterou prohledává senzor
+
     
     SIMSTEPS = 1000
     
@@ -517,9 +577,8 @@ def main():
         timer += 1    
             
         check_mes_won(mes, flag)
-        handle_mes_movement(mes, mines, flag)
-        
-        
+        handle_mes_movement(mes, mines, flag, DELKA_SENZORU)
+
         handle_mines_movement(mines)
         
         mes_collision(mes, mines)
@@ -527,7 +586,6 @@ def main():
         if all_dead(mes):
             evolving = True
             #draw_text("Boom !!!")"""
-
             
         update_mes_timers(mes, timer)        
         draw_window(mes, mines, flag, level, generation, timer)
@@ -549,7 +607,7 @@ def main():
         if timer >= SIMSTEPS or nobodys_playing(mes): 
             
             # přepočítání fitness funkcí, dle dat uložených v jedinci
-            handle_mes_fitnesses(mes)   # <--------- ZDE funkce výpočtu fitness !!!!
+            handle_mes_fitnesses(mes, flag)   # <--------- ZDE funkce výpočtu fitness !!!!
             
             update_hof(hof, mes)
             
