@@ -86,7 +86,7 @@ class Me:
         self.alive = True
         self.won = False
         self.timealive = 0
-        self.sequence = [1, 1, 1, 1, 3]
+        self.sequence = []
         self.fitness = 0
         self.dist = 0
     
@@ -151,10 +151,9 @@ def reset_mes(mes, pop):
 # -----------------------------------------------------------------------------
 # TODO
 
-def my_senzor(me, flag, mines, senzor_len):
+def my_senzor(me, flag, mines, sensor_len):
     my_pos = (me.rect.x, me.rect.y)
     flag_pos = (flag.rect.x, flag.rect.y)
-    flag_difference = (flag_pos[0] - my_pos[0], flag_pos[1] - my_pos[1])
 
     for mine in mines:
         mine_pos = (mine.rect.x, mine.rect.y)
@@ -163,32 +162,22 @@ def my_senzor(me, flag, mines, senzor_len):
         y_difference = my_pos[1] - mine_pos[1]
 
         # (Y over me, Y below me, X front of me, X behind me, flag_diff)
-        if 0 < y_difference <= senzor_len:
-            if 0 < x_difference <= senzor_len:
-                print("Over ME by:", y_difference)
-                print("Behind of ME by:", x_difference)
-                return abs(y_difference), 0, 0, abs(x_difference), flag_difference
+        if 0 < y_difference <= sensor_len:
+            if 0 < x_difference <= sensor_len:
+                return abs(y_difference), 0, 0, abs(x_difference), my_pos, flag_pos
 
-            elif 0 > x_difference >= -senzor_len:
-                print("Over ME by:", y_difference)
-                print("Front ME by:", x_difference)
-                return abs(y_difference), 0, abs(x_difference), 0, flag_difference
+            elif 0 > x_difference >= -sensor_len:
+                return abs(y_difference), 0, abs(x_difference), 0, my_pos, flag_pos
 
         # (Y over me, Y below me, X front of me, X behind me, flag_diff)
-        elif 0 > y_difference >= -senzor_len:
-            if 0 < x_difference <= senzor_len:
-                print("Under ME by:", y_difference)
-                print("Behind of ME by:", x_difference)
-                return 0, abs(y_difference), 0, abs(x_difference), flag_difference
+        elif 0 > y_difference >= -sensor_len:
+            if 0 < x_difference <= sensor_len:
+                return 0, abs(y_difference), 0, abs(x_difference), my_pos, flag_pos
+            elif 0 > x_difference >= -sensor_len:
+                return 0, abs(y_difference), abs(x_difference), 0, my_pos, flag_pos
 
-            elif 0 > x_difference >= -senzor_len:
-                print("Under ME by:", y_difference)
-                print("Front ME by:", x_difference)
-                return 0, abs(y_difference), abs(x_difference), 0, flag_difference
-
-    # print(my_pos)
     # (Y over me, Y below me, X front of me, X behind me, flag_diff)
-    return 0, 0, 0, 0, flag_difference
+    return 0, 0, 0, 0, my_pos, flag_pos
 
 
 # -----> ZDE je prostor pro vlastní senzorické funkce !!!!
@@ -333,7 +322,7 @@ def draw_window(mes, mines, flag, level, generation, timer):
 
 def draw_text(text):
     t = BOOM_FONT.render(text, 1, WHITE)   
-    WIN.blit(t, (WIDTH // 2  , HEIGHT // 2))     
+    WIN.blit(t, (WIDTH // 2, HEIGHT // 2))
     
     pygame.display.update()
     pygame.time.delay(1000)
@@ -359,46 +348,45 @@ def draw_text(text):
 # vrátí seznam hodnot výstupních neuronů
 def nn_function(inp, wei):
     # TODO: Vyplnit neuronovou síť
-    # (Y over me, Y below me, X front of me, X behind me, flag_diff(x, y))
-    # [(0, 0, 0, 0, (840, 430))]
+    # (Y over me, Y below me, X front of me, X behind me, my_pos(x, y), flag_pos(x, y))
+    # [(0, 0, 0, 0, (840, 430), (500, 400))]
+
     # [Go down, Go up, Go left, Go right]
     output = [0, 0, 0, 0]
-    print(wei)
 
-    # Write if ME must go some way because of DANGER
-    # Go DOWN
-    if inp[0] != 0:
-        output[0] = 1 * wei[0]
-        if (inp[4][1] - 5) > inp[4][1]:
-            output[0] = output[0] - wei[4]
-        else:
-            output[0] = output[0] + wei[4]
+    #print(inp)
+    #print(wei)
 
-    # Go UP
-    if inp[1] != 0:
-        output[1] = 1 * wei[1]
-        if (inp[4][1] + 5) > inp[4][1]:
-            output[1] = output[1] - wei[4]
-        else:
-            output[1] = output[1] + wei[4]
+    # Write if ME must go some way because of MINE DANGER
+    # Go DOWN from MINE
+    output[0] = inp[0] * wei[0]
+    # Go UP from MINE
+    output[1] = inp[1] * wei[1]
+    # Go LEFT from MINE
+    output[2] = inp[2] * wei[2]
+    # Go RIGHT from MINE
+    output[3] = inp[3] * wei[3]
 
-    # Go LEFT
-    if inp[2] != 0:
-        output[2] = 1 * wei[2]
-        if (inp[4][0] - 5) > inp[4][0]:
-            output[2] = output[2] - wei[4]
-        else:
-            output[2] = output[2] + wei[4]
+    # Adjusting movement based on flag position
+    # Y axis adjustment
+    if inp[4][1] < inp[5][1]:
+        # Go down
+        output[0] += wei[4]
+    elif inp[4][1] > inp[5][1]:
+        # Go up
+        output[1] += wei[5]
 
-    # Go RIGHT
-    if inp[3] != 0:
-        output[3] = 1 * wei[3]
-        if (inp[4][0] - 5) > inp[4][0]:
-            output[3] = output[2] - wei[4]
-        else:
-            output[3] = output[2] + wei[4]
+    # X axis adjustment
+    if inp[4][0] > inp[5][0]:
+        # Go left
+        output[2] += wei[6]
+    elif inp[4][0] < inp[5][0]:
+        # Go right
+        output[3] += wei[7]
 
     return output
+
+
 
 
 # naviguje jedince pomocí neuronové sítě a jeho vlastní sekvence v něm schované
@@ -406,32 +394,36 @@ def nn_navigate_me(me, inp):
     # TODO  <------ ZDE vlastní kód vyhodnocení výstupů z neuronové sítě !!!!!!
 
     out = np.array(nn_function(inp, me.sequence))
-    print(out)
-    ind = out
+    #print(out)
+    #print(max(out))
+    #print(np.where(out == max(out)))
+    #print(np.where(out == max(out))[0])
+    #print(np.where(out == max(out))[0][0])
+    ind = np.where(out == max(out))[0][0]
     #print(out)
 
     # dolu, pokud není zeď
-    if ind[0] > 0 and me.rect.y + me.rect.height + ME_VELOCITY < HEIGHT:
+    if out[0] > 0 and ind == 0 and me.rect.y + me.rect.height + ME_VELOCITY < HEIGHT:
         me.rect.y += ME_VELOCITY
         me.dist += ME_VELOCITY
 
     # nahoru, pokud není zeď
-    if ind[1] > 0 and me.rect.y - ME_VELOCITY > 0:
+    if out[1] > 0 and ind == 1 and me.rect.y - ME_VELOCITY > 0:
         me.rect.y -= ME_VELOCITY
         me.dist += ME_VELOCITY
 
     # doleva, pokud není zeď
-    if ind[2] > 0 and me.rect.x - ME_VELOCITY > 0:
+    if out[2] > 0 and ind == 2 and me.rect.x - ME_VELOCITY > 0:
         me.rect.x -= ME_VELOCITY
         me.dist += ME_VELOCITY
         
     # doprava, pokud není zeď    
-    if ind[3] > 0 and me.rect.x + me.rect.width + ME_VELOCITY < WIDTH:
+    if out[3] > 0 and ind == 3 and me.rect.x + me.rect.width + ME_VELOCITY < WIDTH:
         me.rect.x += ME_VELOCITY
         me.dist += ME_VELOCITY
-    
-    
-        
+
+
+
 
 # updatuje, zda me vyhrali 
 def check_mes_won(mes, flag):
@@ -440,6 +432,7 @@ def check_mes_won(mes, flag):
             if me_won(me, flag):
                 me.won = True
     
+
 
 
 # resi pohyb mes
@@ -453,8 +446,9 @@ def handle_mes_movement(mes, mines, flag, senzor_length):
             
             for x in my_senzor(me, flag, mines, senzor_length):
                 inp.append(x)
-            print(inp)
+
             nn_navigate_me(me, inp)
+
 
 
 
@@ -465,10 +459,10 @@ def update_mes_timers(mes, timer):
             me.timealive = timer
 
 
-
 # ---------------------------------------------------------------------------
 # fitness funkce výpočty jednotlivců
 #----------------------------------------------------------------------------
+
 
 
 
@@ -479,8 +473,11 @@ def handle_mes_fitnesses(mes, flag):
     for me in mes:
         my_number_pos = me.rect.x + me.rect.y
         flag_num_pos = flag.rect.x + flag.rect.y
+        #print("Fitness:", flag_num_pos - my_number_pos)
         me.fitness = flag_num_pos - my_number_pos
         # me.timealive + (flag_num_pos - my_number_pos)
+
+
 
 
 # uloží do hof jedince s nejlepší fitness
@@ -495,23 +492,20 @@ def update_hof(hof, mes):
 # ----------------------------------------------------------------------------
 
 def main():
-    
-    
     # =====================================================================
     # <----- ZDE Parametry nastavení evoluce !!!!!
     
     VELIKOST_POPULACE = 10
-    EVO_STEPS = 5  # pocet kroku evoluce
-    DELKA_JEDINCE = 10   # <--------- záleží na počtu vah a prahů u neuronů !!!!!
-    NGEN = 30        # počet generací
-    CXPB = 0.6          # pravděpodobnost crossoveru na páru
-    MUTPB = 0.2        # pravděpodobnost mutace+
+    EVO_STEPS = 5        # pocet kroku evoluce
+    DELKA_JEDINCE = 8    # <--------- záleží na počtu vah a prahů u neuronů !!!!!
+    NGEN = 10            # počet generací
+    CXPB = 0.6           # pravděpodobnost crossoveru na páru
+    MUTPB = 0.2          # pravděpodobnost mutace+
     DELKA_SENZORU = 100  # vzdálenost, kterou prohledává senzor
 
-    
     SIMSTEPS = 1000
     
-    creator.create("FitnessMax", base.Fitness, weights=(1.0,))
+    creator.create("FitnessMax", base.Fitness, weights=(-1.0,))
     creator.create("Individual", list, fitness=creator.FitnessMax)
     
     toolbox = base.Toolbox()
@@ -550,8 +544,8 @@ def main():
     flag = Flag()
     
     hof = Hof()
-    
-    
+    print("Hall of Fame:", hof)
+
     run = True
 
     level = 1   # <--- ZDE nastavení obtížnosti počtu min !!!!!
@@ -613,8 +607,8 @@ def main():
             
             
             #plot fitnes funkcí
-            #ff = [me.fitness for me in mes]
-            
+            ff = [me.fitness for me in mes]
+
             #print(ff)
             
             # přiřazení fitnessů z jedinců do populace
@@ -626,7 +620,7 @@ def main():
             
             
             # selekce a genetické operace
-            offspring = toolbox.select(pop, len(pop))
+            offspring = toolbox.selectbest(pop, len(pop))
             offspring = list(map(toolbox.clone, offspring))
             
 
@@ -646,9 +640,15 @@ def main():
             
             
             evolving = True
-                   
-        
-    # po vyskočení z cyklu aplikace vytiskne DNA sekvecni jedince s nejlepší fitness
+
+        if generation == NGEN:
+            level += 1
+            generation = 0
+            reset_mes(mes, pop)  # přiřadí sekvence z populace jedincům a dá je na start !!!!
+            mines = set_mines(level)
+            timer = 0
+
+            # po vyskočení z cyklu aplikace vytiskne DNA sekvecni jedince s nejlepší fitness
     # a ukončí se
     
     pygame.quit()    
