@@ -1,6 +1,12 @@
 # -*- coding: utf-8 -*-
-
-
+"""
+Úkol č.7 pro předmět Umělá Inteligence.
+Skoro všechny funkce již byly předpřipravené profesorem.
+!!!
+    Úkolem je vyplnit funkce a logiku, kde se zoobrazuje komentář s textem "ZDE LOGIKA".
+    Části, kterí obsahují jenom komentář "ZDE" lze měnit a nastavovat
+!!!
+"""
 import pygame
 import numpy as np
 import random
@@ -18,11 +24,8 @@ pygame.font.init()
 # -----------------------------------------------------------------------------
 
 WIDTH, HEIGHT = 900, 500
-
 WIN = pygame.display.set_mode((WIDTH, HEIGHT))
-
 WHITE = (255, 255, 255)
-
 
 TITLE = "Boom Master"
 pygame.display.set_caption(TITLE)
@@ -31,16 +34,13 @@ FPS = 80
 ME_VELOCITY = 5
 MAX_MINE_VELOCITY = 3
 
-
 BOOM_FONT = pygame.font.SysFont("comicsans", 100)   
 LEVEL_FONT = pygame.font.SysFont("comicsans", 20)   
-
 
 ENEMY_IMAGE = pygame.image.load("mine.png")
 ME_IMAGE = pygame.image.load("me.png")
 SEA_IMAGE = pygame.image.load("sea.png")
 FLAG_IMAGE = pygame.image.load("flag.png")
-
 
 ENEMY_SIZE = 50
 ME_SIZE = 50
@@ -58,6 +58,15 @@ FLAG = pygame.transform.scale(FLAG_IMAGE, (ME_SIZE, ME_SIZE))
 
 # trida reprezentujici minu
 class Mine:
+    """
+    Object representing the MINE in the game field.
+
+    Attributes:
+        dirx        The X direction to which Mine will go
+        diry        The Y direction to which Mine will go
+        rect        The Invisible border for game objects manipulation, specified by ENEMY_SIZE
+        velocity    The speed of Mine
+    """
     def __init__(self):
 
         # random x direction
@@ -81,8 +90,20 @@ class Mine:
   
 # trida reprezentujici me, tedy meho agenta        
 class Me:
+    """
+    Object representing our Agent, in other words ME
+
+    Attributes:
+        rect        The Invisible border for game objects manipulation, specified by ME_SIZE
+        alive       Controls if our agent is still alive in game
+        won         Controls if our agent reached the flag / goal
+        timealive   How long our agent was alive
+        sequence    Weights sequence, which every agent has unique and uses it for its decisions and movements
+        fitness     How well the agent played our game
+        dist        Distance ???
+    """
     def __init__(self):
-        self.rect = pygame.Rect(10, random.randint(1, 300), ME_SIZE, ME_SIZE)  
+        self.rect = pygame.Rect(10, random.randint(1, 300), ME_SIZE, ME_SIZE)
         self.alive = True
         self.won = False
         self.timealive = 0
@@ -93,23 +114,41 @@ class Me:
     
 # třída reprezentující cíl = praporek    
 class Flag:
+    """
+    Object representing the Flag (Goal of every round)
+
+    Attributes:
+        rect        The Invisible border for game objects manipulation, specified by ME_SIZE
+    """
     def __init__(self):
         self.rect = pygame.Rect(WIDTH - ME_SIZE, HEIGHT - ME_SIZE - 10, ME_SIZE, ME_SIZE)
         
 
 # třída reprezentující nejlepšího jedince - hall of fame   
 class Hof:
+    """
+    Object representing the best agent / individual of the game
+
+    Attributes:
+        sequence    The weights code of the individual
+    """
     def __init__(self):
         self.sequence = []
 
     
 # -----------------------------------------------------------------------------    
 # nastavení herního plánu    
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
     
 
 # rozestavi miny v danem poctu num
-def set_mines(num):
+def set_mines(num: int) -> list[Mine]:
+    """
+    Sets up new mines in the game.
+
+    :param int num: Tells how many mines should be created
+    :return: List of the Objects Mine
+    """
     l = []
     for i in range(num):
         m = Mine()
@@ -119,7 +158,13 @@ def set_mines(num):
     
 
 # inicializuje me v poctu num na start 
-def set_mes(num):
+def set_mes(num: int) -> list[Me]:
+    """
+    Sets up new agents (mes) in the game
+
+    :param int num: Tells how many mes should be created
+    :return: List of the Objects Me
+    """
     l = []
     for i in range(num):
         m = Me()
@@ -129,7 +174,13 @@ def set_mes(num):
 
 
 # zresetuje vsechny mes zpatky na start
-def reset_mes(mes, pop):
+def reset_mes(mes: list[Me()], pop: int):
+    """
+    Resets all mes into default position and alive state to start new round
+
+    :param list[Me()] mes: List of the Objects Me
+    :param int pop: Amount of Mes population
+    """
     for i in range(len(pop)):
         me = mes[i]
         me.rect.x = 10
@@ -142,16 +193,21 @@ def reset_mes(mes, pop):
         me.fitness = 0
 
 
-
-
-
-
 # -----------------------------------------------------------------------------    
 # senzorické funkce 
 # -----------------------------------------------------------------------------
-# TODO
+def my_senzor(me: Me, flag: Flag, mines: list[Mine], sensor_len: int) -> tuple:
+    """
+    Seensoric function returning the position of the visible mine, me position and flag position
 
-def my_senzor(me, flag, mines, sensor_len):
+    :param me: Object Instance of Me
+    :param flag: Object instance of Flag
+    :param mines: List of Objects Mine
+    :param sensor_len: Sensor length, to which every Me can see
+    :return: tuple of the values in order: (Mine Y over me, Mine Y below me, Mine X front of me, Mine X behind me,
+    my_pos(x,y, flag_pos(x,y)
+    """
+    # <----- ZDE LOGIKA je prostor pro vlastní senzorické funkce !!!!
     my_pos = (me.rect.x, me.rect.y)
     flag_pos = (flag.rect.x, flag.rect.y)
 
@@ -180,23 +236,20 @@ def my_senzor(me, flag, mines, sensor_len):
     return 0, 0, 0, 0, my_pos, flag_pos
 
 
-# -----> ZDE je prostor pro vlastní senzorické funkce !!!!
-
-
-
-
-
-
-
-
-
 # ---------------------------------------------------------------------------
 # funkce řešící pohyb agentů
 # ----------------------------------------------------------------------------
 
 
 # konstoluje kolizi 1 agenta s minama, pokud je kolize vraci True
-def me_collision(me, mines):    
+def me_collision(me: Me, mines: list[Mine]) -> bool:
+    """
+    Validates if agent Me collided with any mine in game
+
+    :param me: Object Instance of Me
+    :param mines: List of the Objects Mine
+    :return: Bool if agent collided or not
+    """
     for mine in mines:
         if me.rect.colliderect(mine.rect):
             #pygame.event.post(pygame.event.Event(ME_HIT))
@@ -205,7 +258,14 @@ def me_collision(me, mines):
             
             
 # kolidujici agenti jsou zabiti, a jiz se nebudou vykreslovat
-def mes_collision(mes, mines):
+def mes_collision(mes: list[Me], mines: list[Mine]):
+    """
+    Verifies every agent if he is collided with mine only when he is still alive and didn't win the round
+
+    :param mes: List of the Objects Me
+    :param mines: List of the Objects Mine
+    :return: Sets an attribute alive to False for Me, which collided
+    """
     for me in mes: 
         if me.alive and not me.won:
             if me_collision(me, mines):
@@ -213,7 +273,13 @@ def mes_collision(mes, mines):
             
             
 # vraci True, pokud jsou vsichni mrtvi Dave            
-def all_dead(mes):    
+def all_dead(mes: list[Me]) -> bool:
+    """
+    Verifies of agents Me are dead or not
+
+    :param mes: List of the Objects Me
+    :return: Bool value if all of them are dead or not (at least one is still alive)
+    """
     for me in mes: 
         if me.alive:
             return False
@@ -222,7 +288,13 @@ def all_dead(mes):
 
 
 # vrací True, pokud již nikdo nehraje - mes jsou mrtví nebo v cíli
-def nobodys_playing(mes):
+def nobodys_playing(mes: list[Me]) -> bool:
+    """
+    Verifies if nobody is still playing the game (they are either dead or won the round)
+
+    :param mes: List of the Objects Me
+    :return: Bool if nobody is playing the or at least one is still in the game
+    """
     for me in mes: 
         if me.alive and not me.won:
             return False
@@ -231,7 +303,14 @@ def nobodys_playing(mes):
 
 
 # rika, zda agent dosel do cile
-def me_won(me, flag):
+def me_won(me: Me, flag: Flag) -> bool:
+    """
+    Verifies if agent Me reached the Flag or not
+
+    :param me: Object Instance of Me
+    :param flag: Object Instance of Flag
+    :return: Bool if agent Me reached the Flag
+    """
     if me.rect.colliderect(flag.rect):
         return True
     
@@ -239,7 +318,13 @@ def me_won(me, flag):
 
 
 # vrací počet živých mes
-def alive_mes_num(mes):
+def alive_mes_num(mes: list[Me]) -> int:
+    """
+    Counts how many agents Me are still alive
+
+    :param mes: List of the Objects Me
+    :return: Number of alive agents Me
+    """
     c = 0
     for me in mes:
         if me.alive:
@@ -248,7 +333,13 @@ def alive_mes_num(mes):
 
 
 # vrací počet mes co vyhráli
-def won_mes_num(mes):
+def won_mes_num(mes: list[Me]) -> int:
+    """
+    Counts how many agents Me won the round
+
+    :param mes: List of the Objects Me
+    :return: Number of winners
+    """
     c = 0
     for me in mes: 
         if me.won:
@@ -257,8 +348,13 @@ def won_mes_num(mes):
 
 
 # resi pohyb miny        
-def handle_mine_movement(mine):
-        
+def handle_mine_movement(mine: Mine):
+    """
+    Function that handles the Mine movements so when it hits the wall, it jumps of the wall at the same angle
+
+    :param mine: Object Instance of Mine
+    :return: Sets up the mine.rect.x and mine.rect.y position by their velocity * x/y direction
+    """
     if mine.dirx == -1 and mine.rect.x - mine.velocity < 0:
         mine.dirx = 1
        
@@ -276,7 +372,12 @@ def handle_mine_movement(mine):
 
 
 # resi pohyb min
-def handle_mines_movement(mines):
+def handle_mines_movement(mines: list[Mine]):
+    """
+    Function that is a for cycle for each "handle_mine_movement" function call
+
+    :param mines: List of the Objects Mine
+    """
     for mine in mines:
         handle_mine_movement(mine)
 
@@ -287,7 +388,18 @@ def handle_mines_movement(mines):
 
 
 # vykresleni okna
-def draw_window(mes, mines, flag, level, generation, timer):
+def draw_window(mes: list[Me], mines: list[Mine], flag: Flag, level: int, generation: int, timer: int):
+    """
+    Function that draws the game windows so that player can see what is going on
+
+    :param mes: List of the Objects Me
+    :param mines: List of the Objects Me
+    :param flag: Object Instance of Flag
+    :param level: Number of the level (correlates to the mines amount)
+    :param generation: Generation of the agents Me
+    :param timer: Passed game time for the round
+    :return: Updates the display window
+    """
     WIN.blit(SEA, (0, 0))   
     
     t = LEVEL_FONT.render("level: " + str(level), 1, WHITE)   
@@ -319,18 +431,18 @@ def draw_window(mes, mines, flag, level, generation, timer):
     pygame.display.update()
 
 
+def draw_text(text: str):
+    """
+    Function that draws the text into the game window
 
-def draw_text(text):
+    :param text: Text we want to draw into the window
+    :return: Updates the window to show text
+    """
     t = BOOM_FONT.render(text, 1, WHITE)   
     WIN.blit(t, (WIDTH // 2, HEIGHT // 2))
     
     pygame.display.update()
     pygame.time.delay(1000)
-
-
-
-
-
 
 
 #-----------------------------------------------------------------------------
@@ -339,15 +451,21 @@ def draw_text(text):
 #----------------------------------------------------------------------------
 
 
-# <----- ZDE je místo vlastní funkci !!!!
-
+# <----- ZDE LOGIKA je místo pro  vlastní funkci !!!!
 
 
 # funkce reprezentující výpočet neuronové funkce
 # funkce dostane na vstupu vstupy neuronové sítě inp, a váhy hran wei
 # vrátí seznam hodnot výstupních neuronů
-def nn_function(inp, wei):
-    # TODO: Vyplnit neuronovou síť
+def nn_function(inp: list, wei: list) -> list:
+    """
+    Function tha represents the neurons of the agents
+
+    :param inp: Inputs saved from the sensor function
+    :param wei: Weights of each action, represented by sequence attribute of object Me
+    :return: List of the actions that represents going [up, down, left, right]
+    """
+    # < ------ ZDE LOGIKA funkce neuronové sítě
     # (Y over me, Y below me, X front of me, X behind me, my_pos(x, y), flag_pos(x, y))
     # [(0, 0, 0, 0, (840, 430), (500, 400))]
 
@@ -387,20 +505,18 @@ def nn_function(inp, wei):
     return output
 
 
-
-
 # naviguje jedince pomocí neuronové sítě a jeho vlastní sekvence v něm schované
-def nn_navigate_me(me, inp):
-    # TODO  <------ ZDE vlastní kód vyhodnocení výstupů z neuronové sítě !!!!!!
+def nn_navigate_me(me: Me, inp: list):
+    """
+    Function that uses neuron output as a inputs for its movement action
 
+    :param me: Object Instance of Me
+    :param inp: inputs for the specified agent Me
+    :return: Change in the agents x/y position by its velocity
+    """
+    # <------ ZDE LOGIKA - čtení výstupu z neuronové sítě
     out = np.array(nn_function(inp, me.sequence))
-    #print(out)
-    #print(max(out))
-    #print(np.where(out == max(out)))
-    #print(np.where(out == max(out))[0])
-    #print(np.where(out == max(out))[0][0])
     ind = np.where(out == max(out))[0][0]
-    #print(out)
 
     # dolu, pokud není zeď
     if out[0] > 0 and ind == 0 and me.rect.y + me.rect.height + ME_VELOCITY < HEIGHT:
@@ -423,24 +539,35 @@ def nn_navigate_me(me, inp):
         me.dist += ME_VELOCITY
 
 
-
-
 # updatuje, zda me vyhrali 
-def check_mes_won(mes, flag):
+def check_mes_won(mes: list[Me], flag: Flag):
+    """
+    Verifies if any agent Me won the round
+
+    :param mes: List of the Objects Me
+    :param flag: Object Instance Flag
+    :return: Sets up Me attribute won to True
+    """
     for me in mes: 
         if me.alive and not me.won:
             if me_won(me, flag):
                 me.won = True
-    
-
 
 
 # resi pohyb mes
-def handle_mes_movement(mes, mines, flag, senzor_length):
-    # TODO: Update správných vstupu ze senzoru
+def handle_mes_movement(mes: list[Me], mines: list[Mine], flag: Flag, senzor_length: int):
+    """
+    Function that handles the movement of Me agents
+
+    :param mes: List of the Objects Me
+    :param mines: List of the Objects Mine
+    :param flag: Objects Instance Flag
+    :param senzor_length: Length of the sensor to which agents can see
+    :return: Uses function nn_navigate_me for each agent Me
+    """
     for me in mes:
         if me.alive and not me.won:
-            # <----- ZDE  sbírání vstupů ze senzorů !!!
+            # <----- ZDE LOGIKA sbírání vstupů ze senzorů !!!
             # naplnit vstup in vstupy ze senzorů
             inp = []
             
@@ -450,10 +577,15 @@ def handle_mes_movement(mes, mines, flag, senzor_length):
             nn_navigate_me(me, inp)
 
 
-
-
 # updatuje timery jedinců
-def update_mes_timers(mes, timer):
+def update_mes_timers(mes: list[Me], timer: int):
+    """
+    Updates attribute alivetime for each agent Me
+
+    :param mes: List of the Objects Me
+    :param timer: Alive time
+    :return: Updates the alivetime attribute
+    """
     for me in mes:
         if me.alive and not me.won:
             me.timealive = timer
@@ -464,11 +596,15 @@ def update_mes_timers(mes, timer):
 #----------------------------------------------------------------------------
 
 
-
-
 # funkce pro výpočet fitness všech jedinců
-def handle_mes_fitnesses(mes, flag):
-    # <--------- TODO  ZDE se počítá fitness jedinců !!!!
+def handle_mes_fitnesses(mes: list[Me], flag: Flag):
+    """
+    Function to calculate the fitness of each agent Me
+
+    :param mes: List of the Objects Me
+    :param flag: Object Instance Flag
+    :return: Sets up the attribute fitness of each agent Me
+    """
     # na základě informací v nich uložených, či jiných vstupů
     for me in mes:
         my_number_pos = me.rect.x + me.rect.y
@@ -478,10 +614,15 @@ def handle_mes_fitnesses(mes, flag):
         # me.timealive + (flag_num_pos - my_number_pos)
 
 
-
-
 # uloží do hof jedince s nejlepší fitness
-def update_hof(hof, mes):
+def update_hof(hof: Hof, mes: list[Me]):
+    """
+    Function that copies the best agent Me into the Hall of Fame
+
+    :param hof: Object Instance Hof
+    :param mes: List of the Objects Me
+    :return: Saves the best agent Me into HoF
+    """
     l = [me.fitness for me in mes]
     ind = np.argmax(l)
     hof.sequence = mes[ind].sequence.copy()
@@ -494,7 +635,6 @@ def update_hof(hof, mes):
 def main():
     # =====================================================================
     # <----- ZDE Parametry nastavení evoluce !!!!!
-    
     VELIKOST_POPULACE = 10
     EVO_STEPS = 5        # pocet kroku evoluce
     DELKA_JEDINCE = 8    # <--------- záleží na počtu vah a prahů u neuronů !!!!!
@@ -504,7 +644,7 @@ def main():
     DELKA_SENZORU = 100  # vzdálenost, kterou prohledává senzor
 
     SIMSTEPS = 1000
-    
+
     creator.create("FitnessMax", base.Fitness, weights=(-1.0,))
     creator.create("Individual", list, fitness=creator.FitnessMax)
     
@@ -515,7 +655,7 @@ def main():
     toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 
     # vlastni random mutace
-    # <----- ZDE TODO vlastní mutace
+    # <----- ZDE vlastní mutace
     def mutRandom(individual, indpb):
         for i in range(len(individual)):
             if random.random() < indpb:
@@ -533,12 +673,8 @@ def main():
     
     clock = pygame.time.Clock()
 
-    
-    
     # =====================================================================
-    # testování hraním a z toho odvození fitness 
-   
-    
+    # testování hraním a z toho odvození fitness
     mines = []
     mes = set_mes(VELIKOST_POPULACE)    
     flag = Flag()
@@ -587,21 +723,16 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
-    
-
-        
-        
-        
         
         # ---------------------------------------------------------------------
-        # <---- ZDE druhá část evoluce po simulaci  !!!!!
+        # <---- Druhá část evoluce po simulaci  !!!!!
         
         # druhá část evoluce po simulaci, když všichni dohrají, simulace končí 1000 krocích
 
         if timer >= SIMSTEPS or nobodys_playing(mes): 
             
             # přepočítání fitness funkcí, dle dat uložených v jedinci
-            handle_mes_fitnesses(mes, flag)   # <--------- ZDE funkce výpočtu fitness !!!!
+            handle_mes_fitnesses(mes, flag)   # <--------- funkce výpočtu fitness !!!!
             
             update_hof(hof, mes)
             
@@ -618,15 +749,9 @@ def main():
                 me = mes[i]
                 ind.fitness.values = (me.fitness, )
             
-            
             # selekce a genetické operace
             offspring = toolbox.selectbest(pop, len(pop))
             offspring = list(map(toolbox.clone, offspring))
-            
-
-            
-            
-            
 
             for child1, child2 in zip(offspring[::2], offspring[1::2]):
                 if random.random() < CXPB:
@@ -637,8 +762,6 @@ def main():
                     toolbox.mutate(mutant)  
             
             pop[:] = offspring
-            
-            
             evolving = True
 
         if generation == NGEN:
