@@ -477,28 +477,44 @@ def nn_function(inp: list, wei: list) -> list:
 
     # Write if ME must go some way because of MINE DANGER
     # Go DOWN from MINE
-    output[0] = inp[0] * wei[0]
+    if inp[0] != 0 and inp[4][1] < HEIGHT - ME_VELOCITY:
+        output[0] = inp[0] * wei[0]
+    else:
+        output[1] = inp[0] * wei[0]
+
     # Go UP from MINE
-    output[1] = inp[1] * wei[1]
+    if inp[1] != 0 and inp[4][1] > 0 + ME_VELOCITY:
+        output[1] = inp[1] * wei[1]
+    else:
+        output[0] = inp[1] * wei[1]
+
     # Go LEFT from MINE
-    output[2] = inp[2] * wei[2]
+    if inp[2] != 0 and inp[4][0] > 0 + ME_VELOCITY:
+        output[2] = inp[2] * wei[2]
+    else:
+        output[3] = inp[2] * wei[2]
+
     # Go RIGHT from MINE
-    output[3] = inp[3] * wei[3]
+    if inp[3] != 0 and inp[4][0] < WIDTH - ME_VELOCITY:
+        output[3] = inp[3] * wei[3]
+    else:
+        output[2] = inp[3] * wei[3]
+
 
     # Adjusting movement based on flag position
     # Y axis adjustment
-    if inp[4][1] < inp[5][1]:
+    if inp[4][1] < inp[5][1] - ME_VELOCITY:
         # Go down
         output[0] += wei[4]
-    elif inp[4][1] > inp[5][1]:
+    elif inp[4][1] > inp[5][1] - ME_VELOCITY:
         # Go up
         output[1] += wei[5]
 
     # X axis adjustment
-    if inp[4][0] > inp[5][0]:
+    if inp[4][0] > inp[5][0] - ME_VELOCITY:
         # Go left
         output[2] += wei[6]
-    elif inp[4][0] < inp[5][0]:
+    elif inp[4][0] < inp[5][0] - ME_VELOCITY:
         # Go right
         output[3] += wei[7]
 
@@ -517,6 +533,8 @@ def nn_navigate_me(me: Me, inp: list):
     # <------ ZDE LOGIKA - čtení výstupu z neuronové sítě
     out = np.array(nn_function(inp, me.sequence))
     ind = np.where(out == max(out))[0][0]
+    print(out)
+    print(inp)
 
     # dolu, pokud není zeď
     if out[0] > 0 and ind == 0 and me.rect.y + me.rect.height + ME_VELOCITY < HEIGHT:
@@ -535,6 +553,7 @@ def nn_navigate_me(me: Me, inp: list):
         
     # doprava, pokud není zeď    
     if out[3] > 0 and ind == 3 and me.rect.x + me.rect.width + ME_VELOCITY < WIDTH:
+        print(me.rect.x + me.rect.width + ME_VELOCITY)
         me.rect.x += ME_VELOCITY
         me.dist += ME_VELOCITY
 
