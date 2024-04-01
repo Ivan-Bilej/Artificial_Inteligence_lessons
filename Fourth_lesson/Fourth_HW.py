@@ -1,37 +1,52 @@
 import numpy as np
 import random as rnd
 import matplotlib.pyplot as plt
-from matplotlib.colors import ListedColormap
 from deap import base, creator, tools, algorithms
 
 
 def plot_terrain(t):
+    """
+    Plots a given terrain profile.
+
+    The terrain is represented as a list of elevations, with the sea level fixed at 0.5. The function plots the terrain
+    above and below sea level using different colors.
+
+    :param t: A list of elevation values for the terrain.
+    """
     fig, ax = plt.subplots()
-
     x = range(len(t))
-    sea = [0.5 for i in range(len(t))]
+    sea = [0.5 for _ in range(len(t))]
 
-    print(t)
-    ax.fill_between(x, sea, color="turquoise")
-    ax.fill_between(x, t, color="sandybrown")
+    ax.fill_between(x, sea, color="turquoise", label='Sea')
+    ax.fill_between(x, t, color="sandybrown", label='Land')
     ax.axis("off")
-    #for i, j in zip(x, t):
-    #    ax.annotate(str(j), xy=(i, j))
 
     plt.draw()
 
 
 def plot_statistics(mean, maximum):
+    """
+    Plots the mean and maximum fitness over generations.
+
+    :param mean: A list of mean fitness values per generation.
+    :param maximum: A list of maximum fitness values per generation.
+    """
     fig, ax = plt.subplots()
 
-    ax.plot(range(max_generations + 1), mean, label="mean")  # 0.tá generace zvlášť
-    ax.plot(range(max_generations + 1), maximum, label="max")
+    ax.plot(range(max_generations + 1), mean, label="Mean Fitness")
+    ax.plot(range(max_generations + 1), maximum, label="Max Fitness")
 
     ax.legend()
     plt.draw()
 
 
 def count_lakes_and_peaks_and_underwater(terrain: list):
+    """
+    Counts the number of lakes, peaks, and underwater points in a terrain profile.
+
+    :param terrain: A list representing the terrain profile.
+    :return: A tuple containing the counts of lakes, peaks, and underwater points.
+    """
     lake_start = False
     peak_start = False
     lake_count = 0
@@ -39,7 +54,7 @@ def count_lakes_and_peaks_and_underwater(terrain: list):
     underwater_count = 0
 
     for point in terrain:
-        if point < 0.5:
+        if point < 0.5:  # Below sea level
             underwater_count += 1
             if not lake_start:
                 lake_start = True
@@ -47,42 +62,53 @@ def count_lakes_and_peaks_and_underwater(terrain: list):
                     peak_count += 1
                     peak_start = False
 
-        else:
-            underwater_count = 0
+        else:  # Above sea level
             if not peak_start:
                 peak_start = True
                 if lake_start:
                     lake_count += 1
                     lake_start = False
 
-    if lake_start:
-        lake_count += 1
-    if peak_start:
-        peak_count += 1
+    # Closing open lakes/peaks at the end of the terrain
+    lake_count += lake_start
+    peak_count += peak_start
 
     return lake_count, peak_count, underwater_count
 
 
 def evaluate(individual):
+    """
+    Evaluates the fitness of a terrain profile based on specified criteria.
+
+    :param individual: A list representing a terrain profile.
+    :return: A tuple containing the inverse of the fitness score; higher is better.
+    """
     lakes, peaks, underwater_count = count_lakes_and_peaks_and_underwater(individual)
     variability = round(max(individual) - min(individual), 3)
     underwater_percentage = underwater_count / len(individual)
 
+    # Commented code can be deleted or uncommented for further testing
     fitness = abs(number_of_lakes - lakes) + \
               abs(number_of_peaks - peaks) + \
               abs(terrain_variability - variability)
-              #abs(underwater_perc - underwater_percentage) + \
-              #abs(lake_size - underwater_count) + \
-              #abs(lake_depth - min(individual))
+              # abs(underwater_perc - underwater_percentage) + \
+              # abs(lake_size - underwater_count) + \
+              # abs(lake_depth - min(individual))
+              # ... can be added more
 
     print("Hodnoty:")
     print(lakes, peaks, variability, underwater_percentage, underwater_count, min(individual), fitness)
-    adjusted_fitness = 1 / (fitness + 0.0001)
-    print(adjusted_fitness)
+
+    adjusted_fitness = 1 / (fitness + 0.0001) # Avoid division by zero
     return (adjusted_fitness,)
 
 
 def create_toolbox():
+    """
+    Creates and configures a DEAP toolbox with genetic algorithm operations.
+
+    :return: Configured DEAP toolbox.
+    """
     def custom_attr_float():
         float_num = rnd.uniform(0.0, 1.0)
         float_num = round(float_num, 3)
@@ -114,6 +140,11 @@ def create_toolbox():
 
 
 def set_up_statistics():
+    """
+    Sets up DEAP statistics to be tracked over generations.
+
+    :return: Configured DEAP statistics object.
+    """
     stats = tools.Statistics(key=lambda ind: ind.fitness.values)
     stats.register("mean", np.mean)
     stats.register("max", np.max)
@@ -122,12 +153,14 @@ def set_up_statistics():
 
 
 def main():
+    """
+    Main function to execute the genetic algorithm for terrain generation optimization.
+    """
     toolbox = create_toolbox()
     stats = set_up_statistics()
     hof = tools.HallOfFame(1)
 
     pop = toolbox.population(n=20)
-    print(pop)
     plot_terrain(pop[0])
     finalpop, logbook = algorithms.eaSimple(pop, toolbox,
                                             cxpb=crossover_percent,
@@ -135,12 +168,8 @@ def main():
                                             ngen=max_generations,
                                             stats=stats,
                                             halloffame=hof)
-    print(finalpop)
-    #print(logbook)
-    print(hof)
 
     mean, maximum = logbook.select("mean", "max")
-    # Ukázka druhé populace
 
     plot_terrain(finalpop[len(finalpop) - 1])
     plot_statistics(mean, maximum)
@@ -164,6 +193,6 @@ if __name__ == "__main__":
     underwater_perc = 0.0
     lake_size = 0
     lake_depth = 0.4
-    # ... can be added more later on
+    # ... can be added more
 
     main()
