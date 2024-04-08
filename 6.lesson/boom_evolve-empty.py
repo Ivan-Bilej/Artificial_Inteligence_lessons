@@ -219,6 +219,7 @@ def my_senzor(me: Me, flag: Flag, mines: list[Mine], sensor_len: int) -> tuple:
 
         # (Y over me, Y below me, X front of me, X behind me, flag_diff)
         if 0 < y_difference <= sensor_len:
+
             if 0 < x_difference <= sensor_len:
                 return abs(y_difference), 0, 0, abs(x_difference), my_pos, flag_pos
 
@@ -457,81 +458,85 @@ def draw_text(text: str):
 # funkce reprezentující výpočet neuronové funkce
 # funkce dostane na vstupu vstupy neuronové sítě inp, a váhy hran wei
 # vrátí seznam hodnot výstupních neuronů
-def nn_function(inp: list, wei: list) -> list:
+def nn_function(inp: list, wei: list, sensor_l: int, danger_mult: int) -> list:
     """
     Function tha represents the neurons of the agents
 
     :param inp: Inputs saved from the sensor function
     :param wei: Weights of each action, represented by sequence attribute of object Me
+    :param sensor_l: Length of the sensor until which agent can see the mines around him
+    :param danger_mult: Number with which funtion will decide when the dnager level changes by dividing sensor_l
+    with danger_mult
     :return: List of the actions that represents going [up, down, left, right]
     """
     # < ------ ZDE LOGIKA funkce neuronové sítě
     # (Y over me, Y below me, X front of me, X behind me, my_pos(x, y), flag_pos(x, y))
     # [(0, 0, 0, 0, (840, 430), (500, 400))]
-
+    # koeficient nebezpečnosti
+    dng_rng_change = sensor_l / danger_mult
     # [Go down, Go up, Go left, Go right]
     output = [0, 0, 0, 0]
 
     #print(inp)
     #print(wei)
 
+    for num in range(danger_mult):
+        if inp[num] != 0:
+            if(sensor_l - dng_rng_change * (num + 1)) < inp[0] < (sensor_l - dng_rng_change * num):
+                inp[num] = inp[num] * wei[num]
+
     # Write if ME must go some way because of MINE DANGER
     # Go DOWN from MINE
     if inp[0] != 0 and inp[4][1] < HEIGHT - ME_VELOCITY:
-        output[0] = inp[0] * wei[0]
-    else:
-        output[1] = inp[0] * wei[0]
+        output[0] = inp[0] * wei[danger_mult]
 
     # Go UP from MINE
     if inp[1] != 0 and inp[4][1] > 0 + ME_VELOCITY:
-        output[1] = inp[1] * wei[1]
-    else:
-        output[0] = inp[1] * wei[1]
+        output[1] = inp[1] * wei[danger_mult + 1]
 
     # Go LEFT from MINE
     if inp[2] != 0 and inp[4][0] > 0 + ME_VELOCITY:
-        output[2] = inp[2] * wei[2]
-    else:
-        output[3] = inp[2] * wei[2]
+        output[2] = inp[2] * wei[danger_mult + 2]
 
     # Go RIGHT from MINE
     if inp[3] != 0 and inp[4][0] < WIDTH - ME_VELOCITY:
-        output[3] = inp[3] * wei[3]
-    else:
-        output[2] = inp[3] * wei[3]
+        output[3] = inp[3] * wei[danger_mult + 3]
 
 
     # Adjusting movement based on flag position
     # Y axis adjustment
     if inp[4][1] < inp[5][1] - ME_VELOCITY:
         # Go down
-        output[0] += wei[4]
+        output[0] += wei[danger_mult + 4]
     elif inp[4][1] > inp[5][1] - ME_VELOCITY:
         # Go up
-        output[1] += wei[5]
+        output[1] += wei[danger_mult + 5]
 
     # X axis adjustment
     if inp[4][0] > inp[5][0] - ME_VELOCITY:
         # Go left
-        output[2] += wei[6]
+        output[2] += wei[danger_mult + 6]
     elif inp[4][0] < inp[5][0] - ME_VELOCITY:
         # Go right
-        output[3] += wei[7]
+        output[3] += wei[danger_mult + 7]
 
     return output
 
 
 # naviguje jedince pomocí neuronové sítě a jeho vlastní sekvence v něm schované
-def nn_navigate_me(me: Me, inp: list):
+def nn_navigate_me(me: Me, inp: list, sen_l: int, dng_mult: int):
     """
     Function that uses neuron output as a inputs for its movement action
 
     :param me: Object Instance of Me
     :param inp: inputs for the specified agent Me
+    :param sen_l: Length of the sensor until which agent can see the mines around him
+    :param dng_mult: Number with which function will decide when the danger level changes by dividing sensor_l
+    with danger_mult
     :return: Change in the agents x/y position by its velocity
     """
     # <------ ZDE LOGIKA - čtení výstupu z neuronové sítě
-    out = np.array(nn_function(inp, me.sequence))
+    out = np.array(nn_function(inp, me.sequence, sen_l, dng_mult))
     ind = np.where(out == max(out))[0][0]
     print(out)
     print(inp)
@@ -574,14 +579,15 @@ def check_mes_won(mes: list[Me], flag: Flag):
 
 
 # resi pohyb mes
-def handle_mes_movement(mes: list[Me], mines: list[Mine], flag: Flag, senzor_length: int):
+def handle_mes_movement(mes: list[Me], mines: list[Mine], flag: Flag, sen_l: int, dng_mult: int):
     """
     Function that handles the movement of Me agents
 
     :param mes: List of the Objects Me
     :param mines: List of the Objects Mine
     :param flag: Objects Instance Flag
-    :param senzor_length: Length of the sensor to which agents can see
+    :param sen_l: Length of the sensor to which agents can see
+    :param dng_mult: Danger multiplier used in NN function for deciding in the danger importance
     :return: Uses function nn_navigate_me for each agent Me
     """
     for me in mes:
@@ -590,10 +596,10 @@ def handle_mes_movement(mes: list[Me], mines: list[Mine], flag: Flag, senzor_len
             # naplnit vstup in vstupy ze senzorů
             inp = []
             
-            for x in my_senzor(me, flag, mines, senzor_length):
+            for x in my_senzor(me, flag, mines, sen_l):
                 inp.append(x)
 
-            nn_navigate_me(me, inp)
+            nn_navigate_me(me, inp, sen_l, dng_mult)
 
 
 # updatuje timery jedinců
@@ -654,13 +660,14 @@ def update_hof(hof: Hof, mes: list[Me]):
 def main():
     # =====================================================================
     # <----- ZDE Parametry nastavení evoluce !!!!!
+    DELKA_SENZORU = 100  # vzdálenost, kterou prohledává senzor
+    DNG_MULT = 4  # čislo, kterým se dělí délka senzoru a čím blíž bude mina, tím větší násobitel se použije
     VELIKOST_POPULACE = 10
     EVO_STEPS = 5        # pocet kroku evoluce
-    DELKA_JEDINCE = 8    # <--------- záleží na počtu vah a prahů u neuronů !!!!!
+    DELKA_JEDINCE = DNG_MULT + 8    # <--------- záleží na počtu vah a prahů u neuronů !!!!!
     NGEN = 10            # počet generací
     CXPB = 0.6           # pravděpodobnost crossoveru na páru
     MUTPB = 0.2          # pravděpodobnost mutace+
-    DELKA_SENZORU = 100  # vzdálenost, kterou prohledává senzor
 
     SIMSTEPS = 1000
 
@@ -726,7 +733,7 @@ def main():
         timer += 1    
             
         check_mes_won(mes, flag)
-        handle_mes_movement(mes, mines, flag, DELKA_SENZORU)
+        handle_mes_movement(mes, mines, flag, DELKA_SENZORU, DNG_MULT)
 
         handle_mines_movement(mines)
         
