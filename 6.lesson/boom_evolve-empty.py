@@ -481,9 +481,19 @@ def nn_function(inp: list, wei: list, sensor_l: int, danger_mult: int) -> list:
     #print(wei)
 
     for num in range(danger_mult):
-        if inp[num] != 0:
+        if inp[0] != 0:
             if(sensor_l - dng_rng_change * (num + 1)) < inp[0] < (sensor_l - dng_rng_change * num):
-                inp[num] = inp[num] * wei[num]
+                inp[0] = inp[0] * wei[num]
+        if inp[1] != 0:
+            if(sensor_l - dng_rng_change * (num + 1)) < inp[1] < (sensor_l - dng_rng_change * num):
+                inp[1] = inp[1] * wei[num]
+        if inp[2] != 0:
+            if(sensor_l - dng_rng_change * (num + 1)) < inp[2] < (sensor_l - dng_rng_change * num):
+                inp[2] = inp[2] * wei[num]
+        if inp[3] != 0:
+            if(sensor_l - dng_rng_change * (num + 1)) < inp[3] < (sensor_l - dng_rng_change * num):
+                inp[3] = inp[3] * wei[num]
+
 
     # Write if ME must go some way because of MINE DANGER
     # Go DOWN from MINE
@@ -538,8 +548,8 @@ def nn_navigate_me(me: Me, inp: list, sen_l: int, dng_mult: int):
     # <------ ZDE LOGIKA - čtení výstupu z neuronové sítě
     out = np.array(nn_function(inp, me.sequence, sen_l, dng_mult))
     ind = np.where(out == max(out))[0][0]
-    print(out)
-    print(inp)
+    #print(out)
+    #print(inp)
 
     # dolu, pokud není zeď
     if out[0] > 0 and ind == 0 and me.rect.y + me.rect.height + ME_VELOCITY < HEIGHT:
@@ -558,7 +568,7 @@ def nn_navigate_me(me: Me, inp: list, sen_l: int, dng_mult: int):
         
     # doprava, pokud není zeď    
     if out[3] > 0 and ind == 3 and me.rect.x + me.rect.width + ME_VELOCITY < WIDTH:
-        print(me.rect.x + me.rect.width + ME_VELOCITY)
+        #print(me.rect.x + me.rect.width + ME_VELOCITY)
         me.rect.x += ME_VELOCITY
         me.dist += ME_VELOCITY
 
@@ -662,9 +672,10 @@ def main():
     # <----- ZDE Parametry nastavení evoluce !!!!!
     DELKA_SENZORU = 100  # vzdálenost, kterou prohledává senzor
     DNG_MULT = 4  # čislo, kterým se dělí délka senzoru a čím blíž bude mina, tím větší násobitel se použije
-    VELIKOST_POPULACE = 10
+    VELIKOST_POPULACE = 100
     EVO_STEPS = 5        # pocet kroku evoluce
     DELKA_JEDINCE = DNG_MULT + 8    # <--------- záleží na počtu vah a prahů u neuronů !!!!!
+    NGEN = 10            # počet generací
     NGEN = 10            # počet generací
     CXPB = 0.6           # pravděpodobnost crossoveru na páru
     MUTPB = 0.2          # pravděpodobnost mutace+
@@ -706,11 +717,10 @@ def main():
     flag = Flag()
     
     hof = Hof()
-    print("Hall of Fame:", hof)
 
     run = True
 
-    level = 1   # <--- ZDE nastavení obtížnosti počtu min !!!!!
+    level = 13   # <--- ZDE nastavení obtížnosti počtu min !!!!!
     generation = 0
     
     evolving = True
@@ -761,6 +771,7 @@ def main():
             handle_mes_fitnesses(mes, flag)   # <--------- funkce výpočtu fitness !!!!
             
             update_hof(hof, mes)
+            print("Fall of fame:", hof.sequence)
             
             
             #plot fitnes funkcí
@@ -790,12 +801,14 @@ def main():
             pop[:] = offspring
             evolving = True
 
+
         if generation == NGEN:
             level += 1
             generation = 0
             reset_mes(mes, pop)  # přiřadí sekvence z populace jedincům a dá je na start !!!!
             mines = set_mines(level)
             timer = 0
+
 
             # po vyskočení z cyklu aplikace vytiskne DNA sekvecni jedince s nejlepší fitness
     # a ukončí se
