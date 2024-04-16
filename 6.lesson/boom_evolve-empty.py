@@ -459,78 +459,22 @@ def draw_text(text: str):
 # funkce dostane na vstupu vstupy neuronové sítě inp, a váhy hran wei
 # vrátí seznam hodnot výstupních neuronů
 def nn_function(inp: list, wei: list, sensor_l: int, danger_mult: int) -> list:
-    """
-    Function tha represents the neurons of the agents
+    # Add function that will use randomizer effect on osme data calculation and cna be done if else for adding
+    # or subtracting some weights / whole calucaltions
+    my_x, my_y = inp[4]
+    flag_x, flag_y = inp[5]
 
-    :param inp: Inputs saved from the sensor function
-    :param wei: Weights of each action, represented by sequence attribute of object Me
-    :param sensor_l: Length of the sensor until which agent can see the mines around him
-    :param danger_mult: Number with which funtion will decide when the dnager level changes by dividing sensor_l
-    with danger_mult
-    :return: List of the actions that represents going [up, down, left, right]
-    """
-    # < ------ ZDE LOGIKA funkce neuronové sítě
-    # (Y over me, Y below me, X front of me, X behind me, my_pos(x, y), flag_pos(x, y))
-    # [(0, 0, 0, 0, (840, 430), (500, 400))]
-    # koeficient nebezpečnosti
-    dng_rng_change = sensor_l / danger_mult
-    # [Go down, Go up, Go left, Go right]
-    output = [0, 0, 0, 0]
+    direction_to_flag = [
+        (flag_y - my_y) / HEIGHT,  # Normalized vertical direction; positive if flag is below
+        (flag_x - my_x) / WIDTH  # Normalized horizontal direction; positive if flag is to the right
+    ]
 
-    #print(inp)
-    #print(wei)
-
-    for num in range(danger_mult):
-        if inp[0] != 0:
-            if(sensor_l - dng_rng_change * (num + 1)) < inp[0] < (sensor_l - dng_rng_change * num):
-                inp[0] = inp[0] * wei[num]
-        if inp[1] != 0:
-            if(sensor_l - dng_rng_change * (num + 1)) < inp[1] < (sensor_l - dng_rng_change * num):
-                inp[1] = inp[1] * wei[num]
-        if inp[2] != 0:
-            if(sensor_l - dng_rng_change * (num + 1)) < inp[2] < (sensor_l - dng_rng_change * num):
-                inp[2] = inp[2] * wei[num]
-        if inp[3] != 0:
-            if(sensor_l - dng_rng_change * (num + 1)) < inp[3] < (sensor_l - dng_rng_change * num):
-                inp[3] = inp[3] * wei[num]
+    # Simulating complex neural network behavior
+    # Assume inputs are pre-processed and weights are configured for a neural model
+    output_signals = [0, 0]
 
 
-    # Write if ME must go some way because of MINE DANGER
-    # Go DOWN from MINE
-    if inp[0] != 0 and inp[4][1] < HEIGHT - ME_VELOCITY:
-        output[0] = inp[0] * wei[danger_mult]
-
-    # Go UP from MINE
-    if inp[1] != 0 and inp[4][1] > 0 + ME_VELOCITY:
-        output[1] = inp[1] * wei[danger_mult + 1]
-
-    # Go LEFT from MINE
-    if inp[2] != 0 and inp[4][0] > 0 + ME_VELOCITY:
-        output[2] = inp[2] * wei[danger_mult + 2]
-
-    # Go RIGHT from MINE
-    if inp[3] != 0 and inp[4][0] < WIDTH - ME_VELOCITY:
-        output[3] = inp[3] * wei[danger_mult + 3]
-
-
-    # Adjusting movement based on flag position
-    # Y axis adjustment
-    if inp[4][1] < inp[5][1] - ME_VELOCITY:
-        # Go down
-        output[0] += wei[danger_mult + 4]
-    elif inp[4][1] > inp[5][1] - ME_VELOCITY:
-        # Go up
-        output[1] += wei[danger_mult + 5]
-
-    # X axis adjustment
-    if inp[4][0] > inp[5][0] - ME_VELOCITY:
-        # Go left
-        output[2] += wei[danger_mult + 6]
-    elif inp[4][0] < inp[5][0] - ME_VELOCITY:
-        # Go right
-        output[3] += wei[danger_mult + 7]
-
-    return output
+    return output_signals
 
 
 # naviguje jedince pomocí neuronové sítě a jeho vlastní sekvence v něm schované
@@ -547,27 +491,28 @@ def nn_navigate_me(me: Me, inp: list, sen_l: int, dng_mult: int):
     """
     # <------ ZDE LOGIKA - čtení výstupu z neuronové sítě
     out = np.array(nn_function(inp, me.sequence, sen_l, dng_mult))
+    print(out)
     ind = np.where(out == max(out))[0][0]
     #print(out)
     #print(inp)
 
     # dolu, pokud není zeď
-    if out[0] > 0 and ind == 0 and me.rect.y + me.rect.height + ME_VELOCITY < HEIGHT:
+    if ind == 0 and me.rect.y + me.rect.height + ME_VELOCITY < HEIGHT:
         me.rect.y += ME_VELOCITY
         me.dist += ME_VELOCITY
 
     # nahoru, pokud není zeď
-    if out[1] > 0 and ind == 1 and me.rect.y - ME_VELOCITY > 0:
+    if ind == 1 and me.rect.y - ME_VELOCITY > 0:
         me.rect.y -= ME_VELOCITY
         me.dist += ME_VELOCITY
 
     # doleva, pokud není zeď
-    if out[2] > 0 and ind == 2 and me.rect.x - ME_VELOCITY > 0:
+    if ind == 2 and me.rect.x - ME_VELOCITY > 0:
         me.rect.x -= ME_VELOCITY
         me.dist += ME_VELOCITY
         
     # doprava, pokud není zeď    
-    if out[3] > 0 and ind == 3 and me.rect.x + me.rect.width + ME_VELOCITY < WIDTH:
+    if ind == 3 and me.rect.x + me.rect.width + ME_VELOCITY < WIDTH:
         #print(me.rect.x + me.rect.width + ME_VELOCITY)
         me.rect.x += ME_VELOCITY
         me.dist += ME_VELOCITY
