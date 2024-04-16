@@ -150,9 +150,12 @@ def main():
 
 
 if __name__ == "__main__":
-    dataset_url = "https://storage.googleapis.com/download.tensorflow.org/example_images/flower_photos.tgz"
+    dataset_url = "https://data.caltech.edu/records/mzrjq-6wc02/files/caltech-101.zip?download=1"
+    #"https://storage.googleapis.com/download.tensorflow.org/example_images/flower_photos.tgz"
     # Dataset for leaves: 4502 images, 22 categories
     # https://data.mendeley.com/datasets/hb74ynkjcn/1
+    # Dataset for Calltech_101
+    # "https://data.caltech.edu/records/mzrjq-6wc02/files/caltech-101.zip?download=1"
     archive = tf.keras.utils.get_file(origin=dataset_url, extract=True)
     data_dir = pathlib.Path(archive).with_suffix('')
     # print(data_dir)
