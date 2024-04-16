@@ -106,28 +106,34 @@ def main():
 
     #show_image_samples(train_ds, class_names, amount=10)
 
-    model = tf.keras.Sequential([
-        tf.keras.layers.Rescaling(1. / 255),
-        tf.keras.layers.Conv2D(32, 3, activation='relu'),
-        tf.keras.layers.MaxPooling2D(),
-        tf.keras.layers.Conv2D(32, 3, activation='relu'),
-        tf.keras.layers.MaxPooling2D(),
-        tf.keras.layers.Conv2D(32, 3, activation='relu'),
-        tf.keras.layers.MaxPooling2D(),
-        tf.keras.layers.Dropout(0.2),
-        tf.keras.layers.RandomFlip("horizontal",
-                                   input_shape=(img_height,
-                                                img_width,
-                                                3)),
+    data_augmentation = tf.keras.Sequential([
+        tf.keras.layers.RandomFlip("horizontal_and_vertical"),
         tf.keras.layers.RandomRotation(0.2),
         tf.keras.layers.RandomZoom(0.2),
+        tf.keras.layers.RandomContrast(0.2),
+        tf.keras.layers.RandomTranslation(0.1, 0.1)
+    ])
+
+    model = tf.keras.Sequential([
+        tf.keras.layers.Rescaling(1. / 255),
+        data_augmentation,
+        tf.keras.layers.Conv2D(32, 3, padding="same", activation='relu'),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.MaxPooling2D(),
+        tf.keras.layers.Conv2D(32, 3, padding="same", activation='relu'),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.MaxPooling2D(),
+        tf.keras.layers.Conv2D(32, 3, padding="same", activation='relu'),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.MaxPooling2D(),
         tf.keras.layers.Flatten(),
-        tf.keras.layers.Dense(128, activation='relu'),
+        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dense(256, activation="relu"),
         tf.keras.layers.Dense(len(class_names), name="outputs")
     ])
 
     model.compile(
-        optimizer='adam',
+        optimizer='adamax',
         loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
         metrics=['accuracy'])
 
@@ -142,15 +148,6 @@ def main():
     model.summary()
     show_training_sample_result(history, epochs)
 
-    data_augmentation = tf.keras.Sequential([
-        tf.keras.layers.RandomFlip("horizontal",
-                                   input_shape=(img_height,
-                                                img_width,
-                                                3)),
-        tf.keras.layers.RandomRotation(0.1),
-        tf.keras.layers.RandomZoom(0.1),
-    ])
-
 
 if __name__ == "__main__":
     dataset_url = "https://storage.googleapis.com/download.tensorflow.org/example_images/flower_photos.tgz"
@@ -159,14 +156,14 @@ if __name__ == "__main__":
     # print(data_dir)
     # print(pathlib.Path.cwd())
 
-    batch_size = 32
-    img_height = 180
-    img_width = 180
+    batch_size = 16
+    img_height = 128
+    img_width = 128
 
     #image_count = len(list(data_dir.glob('*/*.jpg')))
     #print(image_count)
 
     AUTOTUNE = tf.data.AUTOTUNE
-    epochs = 20
+    epochs = 50
 
     main()
