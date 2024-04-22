@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import tensorflow as tf
 import pathlib
+import tensorflow_datasets as tfds
 
 
 def show_sample(smp, cls):
@@ -17,10 +18,8 @@ def show_sample(smp, cls):
 def show_training_sample_result(history, epochs):
     acc = history.history['accuracy']
     val_acc = history.history['val_accuracy']
-
     loss = history.history['loss']
     val_loss = history.history['val_loss']
-
     epochs_range = range(epochs)
 
     plt.figure(figsize=(8, 8))
@@ -92,9 +91,23 @@ def main():
         seed=123,
         image_size=(img_height, img_width),
         batch_size=batch_size)
+    """
+
+    (train_ds, val_ds), ds_info = tfds.load(
+        "cifar10",
+        split=["train", "test"],
+        batch_size=batch_size,
+        as_supervised=True,
+        with_info=True,
+    )
+
+
+    print(ds_info.features['label'].names)
+    class_names = ds_info.features['label'].names
+    print(class_names)
+    """
 
     class_names = train_ds.class_names
-    print(class_names)
 
     train_ds = train_ds.cache().prefetch(buffer_size=AUTOTUNE)
     val_ds = val_ds.cache().prefetch(buffer_size=AUTOTUNE)
@@ -103,8 +116,6 @@ def main():
     #    print(image_batch)
     #    print(labels_batch)
     #    break
-
-    #show_image_samples(train_ds, class_names, amount=10)
 
     data_augmentation = tf.keras.Sequential([
         tf.keras.layers.RandomFlip("horizontal_and_vertical"),
@@ -117,27 +128,29 @@ def main():
     model = tf.keras.Sequential([
         tf.keras.layers.Rescaling(1. / 255),
         data_augmentation,
-        tf.keras.layers.Conv2D(32, 3, padding="same", activation='relu'),
         tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.Conv2D(32, 3, padding="same", activation='relu'),
         tf.keras.layers.MaxPooling2D(),
         tf.keras.layers.Conv2D(32, 3, padding="same", activation='relu'),
-        tf.keras.layers.BatchNormalization(),
+        #tf.keras.layers.BatchNormalization(),
         tf.keras.layers.MaxPooling2D(),
         tf.keras.layers.Conv2D(32, 3, padding="same", activation='relu'),
-        tf.keras.layers.BatchNormalization(),
+        #tf.keras.layers.BatchNormalization(),
         tf.keras.layers.MaxPooling2D(),
         tf.keras.layers.Flatten(),
-        tf.keras.layers.Dropout(0.5),
-        tf.keras.layers.Dense(256, activation="relu"),
+        tf.keras.layers.Dropout(0.4),
+        tf.keras.layers.Dense(128, activation="relu"),
         tf.keras.layers.Dense(len(class_names), name="outputs")
     ])
+
+    #process_image_samples(train_ds, class_names, amount=1)
 
     model.compile(
         optimizer='adamax',
         loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
         metrics=['accuracy'])
 
-    #model.summary()
+    model.summary()
 
     history = model.fit(
         train_ds,
@@ -148,27 +161,31 @@ def main():
     model.summary()
     show_training_sample_result(history, epochs)
 
+    pr_model = tf.keras.Sequential([model, tf.keras.layers.Softmax()])  # přidání softmax vrstvy
+    predictions = pr_model.predict(train_ds)
+
 
 if __name__ == "__main__":
-    dataset_url = "https://data.caltech.edu/records/mzrjq-6wc02/files/caltech-101.zip?download=1"
+    dataset_url = "https://storage.googleapis.com/download.tensorflow.org/example_images/flower_photos.tgz"
     #"https://storage.googleapis.com/download.tensorflow.org/example_images/flower_photos.tgz"
     # Dataset for leaves: 4502 images, 22 categories
     # https://data.mendeley.com/datasets/hb74ynkjcn/1
     # Dataset for Calltech_101
     # "https://data.caltech.edu/records/mzrjq-6wc02/files/caltech-101.zip?download=1"
+
     archive = tf.keras.utils.get_file(origin=dataset_url, extract=True)
     data_dir = pathlib.Path(archive).with_suffix('')
     # print(data_dir)
     # print(pathlib.Path.cwd())
 
     batch_size = 16
-    img_height = 128
     img_width = 128
+    img_height = 128
 
     #image_count = len(list(data_dir.glob('*/*.jpg')))
     #print(image_count)
 
     AUTOTUNE = tf.data.AUTOTUNE
-    epochs = 50
+    epochs = 20
 
     main()
