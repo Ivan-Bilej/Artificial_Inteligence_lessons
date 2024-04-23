@@ -139,26 +139,89 @@ class Env:
 
         def dijkstr_search():
             d = deque()
-            walked_path = 0
             ufo_x = self.startx
             ufo_y = self.starty
 
-            if len(d) == 0:
-                while ufo_x != self.goalx and ufo_y != self.goaly:
-                    found_better = False
-                    possible_paths = {}
-                    neighbors = self.get_neighbors(ufo_x, ufo_y)
+            d = deque()
+            visited = set()
+            priority_queue = []
 
-                    for neigh in neighbors:
-                        #print("Neighbor:", neigh)
-                        if self.is_empty(neigh[0], neigh[1]) and neigh[0] >= 0 and neigh[1] >= 0:
-                            possible_paths[(neigh[0], neigh[1])] = walked_path + 1
+            priority_queue.append((0, (self.startx, self.starty)))
+            costs = {(self.startx, self.starty): 0}
+            from_dict = {}
+
+            while priority_queue:
+                # Find the lowest cost node
+                priority_queue.sort(key=lambda x: x[0])  # Sort every time, less efficient
+                current_cost, (x, y) = priority_queue.pop(0)
+
+                if (x, y) in visited:
+                    continue
+                visited.add((x, y))
+
+                if (x, y) == (self.goalx, self.goaly):
+                    break
+
+                for (nx, ny) in self.get_neighbors(x, y):
+                    if self.is_empty(nx, ny) and (nx, ny) not in visited:
+                        new_cost = current_cost + 1
+                        if (nx, ny) not in costs or new_cost < costs[(nx, ny)]:
+                            costs[(nx, ny)] = new_cost
+                            priority_queue.append((new_cost, (nx, ny)))
+                            from_dict[(nx, ny)] = (x, y)
+
+            # Reconstruct the path
+            if (self.goalx, self.goaly) in from_dict:
+                step = (self.goalx, self.goaly)
+                while step != (self.startx, self.starty):
+                    d.appendleft(step)
+                    step = from_dict[step]
+                d.appendleft((self.startx, self.starty))
 
             print(d)
             return d
 
         def a_star_Search():
             d = deque()
+            visited = set()
+            priority_queue = []
+
+            heuristic = lambda x, y: abs(x - self.goalx) + abs(y - self.goaly)  # Manhattan distance
+            g_cost = {(self.startx, self.starty): 0}
+            f_cost = {(self.startx, self.starty): heuristic(self.startx, self.starty)}
+
+            priority_queue.append((f_cost[(self.startx, self.starty)], (self.startx, self.starty)))
+            from_dict = {}
+
+            while priority_queue:
+                priority_queue.sort(key=lambda x: x[0])  # Sort the list to find the node with the lowest f_cost
+                _, (x, y) = priority_queue.pop(0)
+
+                if (x, y) == (self.goalx, self.goaly):
+                    break
+
+                if (x, y) in visited:
+                    continue
+                visited.add((x, y))
+
+                for (nx, ny) in self.get_neighbors(x, y):
+                    if self.is_empty(nx, ny) and (nx, ny) not in visited:
+                        tentative_g_cost = g_cost[(x, y)] + 1
+                        if (nx, ny) not in g_cost or tentative_g_cost < g_cost[(nx, ny)]:
+                            g_cost[(nx, ny)] = tentative_g_cost
+                            f_cost[(nx, ny)] = tentative_g_cost + heuristic(nx, ny)
+                            priority_queue.append((f_cost[(nx, ny)], (nx, ny)))
+                            from_dict[(nx, ny)] = (x, y)
+
+            # Reconstruct the path
+            if (self.goalx, self.goaly) in from_dict:
+                step = (self.goalx, self.goaly)
+                while step != (self.startx, self.starty):
+                    d.appendleft(step)
+                    step = from_dict[step]
+                d.appendleft((self.startx, self.starty))
+
+            return d
 
         #d = easy_path()
         d = greedy_search()
