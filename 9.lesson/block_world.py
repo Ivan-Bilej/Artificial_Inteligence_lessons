@@ -96,31 +96,34 @@ class Env:
 
         def greedy_search():
             d = deque()
-            queue = []
-            visited = set()
+            walked_path = []
+            heuristic_length = (self.startx - self.goalx) ** 2 + (self.starty - self.goaly) ** 2
+            ufo_x, ufo_y = self.startx, self.starty
 
-            heuristic = (self.startx - self.goalx) ** 2 + (self.starty - self.goaly) ** 2
-            queue.append((heuristic, (self.startx, self.starty)))
-            visited.add((self.startx, self.starty))
+            d.append((ufo_x, ufo_y))
+            walked_path.append((ufo_x, ufo_y))
 
-            while queue:
-                # Sort the list to find the node with the lowest heuristic
-                queue.sort()
-                current_heuristic, (ufo_x, ufo_y) = queue.pop(0)
+            while heuristic_length != 0:
+                possible_closer_paths = {}
+                print("Ufo position:", ufo_x, ufo_y)
 
-                # Add to path
-                d.append((ufo_x, ufo_y))
-
-                # Stop if goal is reached
-                if current_heuristic == 0:
-                    break
-
-                neighbors = self.get_neighbors(ufo_x, ufo_y)
-                for neigh in neighbors:
-                    if self.is_empty(neigh[0], neigh[1]) and (neigh[0], neigh[1]) not in visited:
-                        visited.add((neigh[0], neigh[1]))
+                for neigh in self.get_neighbors(ufo_x, ufo_y):
+                    if self.is_empty(neigh[0], neigh[1]) and (neigh[0], neigh[1]) not in d:
                         temp_heur = (neigh[0] - self.goalx) ** 2 + (neigh[1] - self.goaly) ** 2
-                        queue.append((temp_heur, (neigh[0], neigh[1])))
+                        if temp_heur <= heuristic_length:
+                            possible_closer_paths[temp_heur] = (neigh[0], neigh[1])
+
+                if possible_closer_paths:
+                    shortest_heur_path = min(possible_closer_paths.keys())
+                    shortest_neigh = possible_closer_paths[shortest_heur_path]
+                    ufo_x, ufo_y = shortest_neigh
+                    heuristic_length = shortest_heur_path
+                    d.append((ufo_x, ufo_y))
+                    walked_path.append((ufo_x, ufo_y))
+                else:
+                    walked_path.pop()
+                    ufo_x, ufo_y = walked_path[-1]
+                    heuristic_length = (ufo_x - self.goalx) ** 2 + (ufo_y - self.goaly) ** 2
 
             print(d)
             return d
@@ -128,36 +131,30 @@ class Env:
         def dijkstr_search():
             d = deque()
             visited = set()
-            step_by_step = {}
+            step_by_step_path = {}
+            ufo_x, ufo_y = self.startx, self.starty
 
-            queue = [(0, (self.startx, self.starty))]
-            costs = {(self.startx, self.starty): 0}
+            queue = [(0, (ufo_x, ufo_y))]
+            costs = {(ufo_x, ufo_y): 0}
 
-            while queue:
+            while (ufo_x, ufo_y) != (self.goalx, self.goaly):
                 queue.sort()
-                current_cost, (ufo_x, ufo_y) = queue.pop(0)
+                cost, (ufo_x, ufo_y) = queue.pop(0)
 
-                if (ufo_x, ufo_y) in visited:
-                    continue
+                for neighboor in self.get_neighbors(ufo_x, ufo_y):
+                    if self.is_empty(neighboor[0], neighboor[1]) and neighboor not in visited:
+                        if neighboor not in costs or costs[neighboor] > cost + 1:
+                            costs[neighboor] = cost + 1
+                            queue.append((cost + 1, neighboor))
+                            step_by_step_path[neighboor] = (ufo_x, ufo_y)
+
                 visited.add((ufo_x, ufo_y))
 
-                if (ufo_x, ufo_y) == (self.goalx, self.goaly):
-                    break
-
-                for (neigh_x, neigh_y) in self.get_neighbors(ufo_x, ufo_y):
-                    if self.is_empty(neigh_x, neigh_y) and (neigh_x, neigh_y) not in visited:
-                        new_cost = current_cost + 1
-                        if (neigh_x, neigh_y) not in costs or new_cost < costs[(neigh_x, neigh_y)]:
-                            costs[(neigh_x, neigh_y)] = new_cost
-                            queue.append((new_cost, (neigh_x, neigh_y)))
-                            step_by_step[(neigh_x, neigh_y)] = (ufo_x, ufo_y)
-
-            # Reconstruct the path
-            if (self.goalx, self.goaly) in step_by_step:
+            if (self.goalx, self.goaly) in step_by_step_path:
                 step = (self.goalx, self.goaly)
                 while step != (self.startx, self.starty):
                     d.appendleft(step)
-                    step = step_by_step[step]
+                    step = step_by_step_path[step]
 
             print(d)
             return d
@@ -165,48 +162,42 @@ class Env:
         def a_star_search():
             d = deque()
             visited = set()
-            queue = []
-            step_by_step = {}
+            ufo_x, ufo_y = self.startx, self.starty
+            step_by_step_path = {}
 
-            heuristic = (self.startx - self.goalx) ** 2 + (self.starty - self.goaly) ** 2
-            g_cost = {(self.startx, self.starty): 0}
-            f_cost = {(self.startx, self.starty): heuristic}
-            queue.append((f_cost[(self.startx, self.starty)], (self.startx, self.starty)))
+            heuristic = (ufo_x - self.goalx) ** 2 + (ufo_y - self.goaly) ** 2
+            g_cost = {(ufo_x, ufo_y): 0}
+            f_cost = {(ufo_x, ufo_y): heuristic + g_cost[(ufo_x, ufo_y)]}
+            queue = [(f_cost[(ufo_x, ufo_y)], (ufo_x, ufo_y))]
 
-            while queue:
+            while (ufo_x, ufo_y) != (self.goalx, self.goaly):
                 queue.sort()
-                _, (x, y) = queue.pop(0)
+                current_heuristic, (ufo_x, ufo_y) = queue.pop(0)
+                current_walk_length = g_cost[(ufo_x, ufo_y)]
 
-                if (x, y) == (self.goalx, self.goaly):
-                    break
+                for neigh in self.get_neighbors(ufo_x, ufo_y):
+                    if self.is_empty(neigh[0], neigh[1]) and neigh not in visited:
+                        if neigh not in g_cost or g_cost[neigh] > current_walk_length + 1:
+                            g_cost[neigh] = current_walk_length + 1
+                            heuristic = (neigh[0] - self.goalx) ** 2 + (neigh[1] - self.goaly) ** 2
+                            f_cost[neigh] = heuristic + g_cost[neigh]
 
-                if (x, y) in visited:
-                    continue
-                visited.add((x, y))
-
-                for (neigh_x, neigh_y) in self.get_neighbors(x, y):
-                    if self.is_empty(neigh_x, neigh_y) and (neigh_x, neigh_y) not in visited:
-                        temp_g_cost = g_cost[(x, y)] + 1
-                        if (neigh_x, neigh_y) not in g_cost or temp_g_cost < g_cost[(neigh_x, neigh_y)]:
-                            g_cost[(neigh_x, neigh_y)] = temp_g_cost
-                            heuristic = (neigh_x - self.goalx) ** 2 + (neigh_y - self.goaly) ** 2
-                            f_cost[(neigh_x, neigh_y)] = temp_g_cost + heuristic
-                            queue.append((f_cost[(neigh_x, neigh_y)], (neigh_x, neigh_y)))
-                            step_by_step[(neigh_x, neigh_y)] = (x, y)
+                            queue.append((f_cost[neigh], neigh))
+                            step_by_step_path[neigh] = (ufo_x, ufo_y)
 
             # Reconstruct the path
-            if (self.goalx, self.goaly) in step_by_step:
+            if (self.goalx, self.goaly) in step_by_step_path:
                 step = (self.goalx, self.goaly)
                 while step != (self.startx, self.starty):
                     d.appendleft(step)
-                    step = step_by_step[step]
+                    step = step_by_step_path[step]
 
             return d
 
         #d = easy_path()
-        #d = greedy_search()
+        d = greedy_search()
         #d = dijkstr_search()
-        d = a_star_search()
+        #d = a_star_search()
 
         return d, list(d)
     
@@ -289,7 +280,7 @@ env.add_block(6, 6)
 env.add_block(7, 7)
 env.add_block(8, 8)
 env.add_block(9, 9)
-env.add_block(10, 10)
+#env.add_block(10, 10)
 env.add_block(0, 8)
 
 env.add_block(11, 1)
@@ -309,7 +300,7 @@ env.add_block(3, 5)
 env.add_block(4, 8)
 env.add_block(5, 6)
 env.add_block(6, 4)
-env.add_block(7, 2)
+env.add_block(9, 2)
 env.add_block(8, 1)
 
 env.add_block(11, 8)
@@ -317,9 +308,9 @@ env.add_block(12, 8)
 env.add_block(13, 8)
 env.add_block(14, 8)
 
-env.add_block(7, 11)
-env.add_block(7, 12)
-env.add_block(7, 13)
+env.add_block(9, 11)
+env.add_block(9, 12)
+env.add_block(9, 13)
 
 
 # pozice ufo <--------------------------
@@ -409,7 +400,7 @@ def main():
     
     #  <------------   nastavení startu a cíle prohledávání !!!!!!!!!!
     env.set_start(0, 0)
-    env.set_goal(5, 12)
+    env.set_goal(12, 12)
     
     p, t = env.path_planner()   # cesta pomocí path_planneru prostředí
     print("Ufo parth:", p, t)
