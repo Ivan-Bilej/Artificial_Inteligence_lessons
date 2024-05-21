@@ -137,7 +137,7 @@ class Env:
             queue = [(0, (ufo_x, ufo_y))]
             costs = {(ufo_x, ufo_y): 0}
 
-            while (ufo_x, ufo_y) != (self.goalx, self.goaly):
+            while queue:
                 queue.sort()
                 cost, (ufo_x, ufo_y) = queue.pop(0)
 
@@ -170,7 +170,7 @@ class Env:
             f_cost = {(ufo_x, ufo_y): heuristic + g_cost[(ufo_x, ufo_y)]}
             queue = [(f_cost[(ufo_x, ufo_y)], (ufo_x, ufo_y))]
 
-            while (ufo_x, ufo_y) != (self.goalx, self.goaly):
+            while queue:
                 queue.sort()
                 current_heuristic, (ufo_x, ufo_y) = queue.pop(0)
                 current_walk_length = g_cost[(ufo_x, ufo_y)]
